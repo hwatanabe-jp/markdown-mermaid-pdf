@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +15,6 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,14 +37,7 @@ jobs:
 
           owner_lower="${GITHUB_REPOSITORY_OWNER,,}"
           image_repo="ghcr.io/${owner_lower}/${IMAGE_NAME}"
-
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            echo "Error: This workflow should only run on tag push"
-            exit 1
-          fi
-
+          version="${GITHUB_REF_NAME}"
           image_tag="${image_repo}:${version}"
 
           echo "version=${version}" >>"$GITHUB_OUTPUT"
@@ -90,24 +81,23 @@ jobs:
         id: notes
         shell: bash
         run: |
-          set -euo pipefail
-          cat <<EOF >RELEASE_BODY.md
-# markdown-mermaid-pdf container image
-
-- Source commit: ${GITHUB_SHA}
-- Image tag: ${{ steps.meta.outputs.image_tag }}
-- Platforms: linux/amd64, linux/arm64
-
-## Usage
-\`\`\`bash
-docker pull ${{ steps.meta.outputs.image_tag }}
-docker run --rm -v "\$PWD/workspace:/workspace" ${{ steps.meta.outputs.image_tag }} document.md output.pdf
-\`\`\`
-
-## Compliance
-- MIT-licensed project files (see attached LICENSE)
-- Third-party license summary (see attached THIRD_PARTY_NOTICES.md)
-EOF
+          {
+            echo "# markdown-mermaid-pdf container image"
+            echo ""
+            echo "- Source commit: ${{ github.sha }}"
+            echo "- Image tag: ${{ steps.meta.outputs.image_tag }}"
+            echo "- Platforms: linux/amd64, linux/arm64"
+            echo ""
+            echo "## Usage"
+            echo '```bash'
+            echo "docker pull ${{ steps.meta.outputs.image_tag }}"
+            echo 'docker run --rm -v "$PWD/workspace:/workspace" ${{ steps.meta.outputs.image_tag }} document.md output.pdf'
+            echo '```'
+            echo ""
+            echo "## Compliance"
+            echo "- MIT-licensed project files (see attached LICENSE)"
+            echo "- Third-party license summary (see attached THIRD_PARTY_NOTICES.md)"
+          } > RELEASE_BODY.md
 
       - name: Create or update GitHub release
         env:
