@@ -1,4 +1,4 @@
-.PHONY: help build run clean test shell example
+.PHONY: help build rebuild run clean clean-all test shell example convert info license-check
 
 # Default target
 help:
@@ -67,7 +67,9 @@ clean:
 	@echo "Cleaning up..."
 	rm -f workspace/*.pdf
 	rm -f workspace/*.log
-	docker compose down -v
+	@if command -v docker compose >/dev/null 2>&1; then \
+		docker compose down -v 2>/dev/null || true; \
+	fi
 	@echo "Cleanup complete"
 
 # Clean everything including Docker images
