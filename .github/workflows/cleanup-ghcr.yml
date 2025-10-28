@@ -1,0 +1,37 @@
+name: Cleanup Old GHCR Versions
+
+on:
+  schedule:
+    # Run every Sunday at 3:00 UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete old container versions
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          # Package name (auto-detected from repository if not specified)
+          package: markdown-mermaid-pdf
+
+          # Keep the 5 most recent tagged versions
+          keep-n-tagged: 5
+
+          # Never delete the 'latest' tag
+          exclude-tags: latest
+
+          # Only delete versions older than 90 days
+          older-than: 90 days
+
+          # Use GITHUB_TOKEN (no PAT required)
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Dry run mode - set to false after verifying output
+          # IMPORTANT: Review the workflow logs before setting this to false
+          dry-run: true

@@ -1,0 +1,6 @@
+# Normalize all text files to LF
+* text=auto eol=lf
+
+# Ensure critical files are treated as text (no CRLF issues in Docker/Linux)
+*.sh text eol=lf
+Dockerfile text eol=lf
