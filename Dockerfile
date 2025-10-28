@@ -32,8 +32,9 @@ RUN apt-get update \
     # Install Node.js 24 (LTS)
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    # Install yq for YAML parsing
-    && wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+    # Install yq for YAML parsing (architecture-aware)
+    && ARCH=$(dpkg --print-architecture) \
+    && wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH} \
     && chmod +x /usr/local/bin/yq \
     # Provide chromium-browser alias for compatibility with tooling expectations
     && ln -sf /usr/bin/chromium /usr/bin/chromium-browser \
