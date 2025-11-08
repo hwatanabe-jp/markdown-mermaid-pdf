@@ -4,8 +4,8 @@ FROM debian:bookworm-slim
 LABEL org.opencontainers.image.title="markdown-mermaid-pdf"
 LABEL org.opencontainers.image.description="Convert Markdown to PDF with Pandoc, XeLaTeX, and Mermaid diagram support"
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/yourusername/markdown-mermaid-pdf"
-LABEL org.opencontainers.image.documentation="https://github.com/yourusername/markdown-mermaid-pdf/blob/main/README.md"
+LABEL org.opencontainers.image.source="https://github.com/hwatanabe-jp/markdown-mermaid-pdf"
+LABEL org.opencontainers.image.documentation="https://github.com/hwatanabe-jp/markdown-mermaid-pdf/blob/main/README.md"
 LABEL org.opencontainers.image.vendor="markdown-mermaid-pdf contributors"
 
 # Avoid interactive prompts during package installation

@@ -114,7 +114,7 @@ docker run --rm --user $(id -u):$(id -g) \
 
 上記で解決しない場合：
 
-1. [GitHub Issues](https://github.com/your-repo/issues) で既存の問題を検索
+1. [GitHub Issues](https://github.com/hwatanabe-jp/markdown-mermaid-pdf/issues) で既存の問題を検索
 2. 新しい Issue を作成（以下の情報を含める）：
    - エラーメッセージ全文
    - 使用している OS とアーキテクチャ
