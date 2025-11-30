@@ -77,6 +77,28 @@ jobs:
           test -f workspace/test-output.pdf
           rm -f workspace/test-output.pdf
 
+      - name: Smoke test pagebreak marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull "${{ steps.meta.outputs.image_tag }}"
+          mkdir -p workspace
+          printf '%s\n' '# CI Pagebreak check' '1st page text.' '' '<!-- pagebreak -->' '' '2nd page text.' > workspace/pagebreak-ci.md
+          docker run --rm \
+            -v "$PWD/workspace:/workspace" \
+            "${{ steps.meta.outputs.image_tag }}" \
+            pagebreak-ci.md pagebreak-ci.pdf
+          pages=$(docker run --rm \
+            -v "$PWD/workspace:/workspace" \
+            --entrypoint /bin/bash \
+            "${{ steps.meta.outputs.image_tag }}" \
+            -c "pdfinfo pagebreak-ci.pdf | awk '/Pages/ {print \$2}'")
+          if [ "${pages}" != "2" ]; then
+            echo "Expected 2 pages, got ${pages}"
+            exit 1
+          fi
+          rm -f workspace/pagebreak-ci.md workspace/pagebreak-ci.pdf
+
       - name: Prepare release notes
         id: notes
         shell: bash

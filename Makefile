@@ -53,6 +53,25 @@ test: example
 		echo "✗ Test failed: example.pdf not found"; \
 		exit 1; \
 	fi
+	@echo "Running pagebreak marker test..."
+	@docker run --rm \
+		-v $$(pwd)/workspace:/workspace \
+		markdown-mermaid-pdf:latest \
+		pagebreak-test.md pagebreak-test.pdf
+	@PAGES=$$(docker run --rm \
+		-v $$(pwd)/workspace:/workspace \
+		--entrypoint pdfinfo \
+		markdown-mermaid-pdf:latest \
+		pagebreak-test.pdf 2>/dev/null | awk '/Pages/ {print $$2}'); \
+	if [ -z "$$PAGES" ]; then \
+		echo "✗ Pagebreak test failed: could not read page count"; \
+		exit 1; \
+	fi; \
+	if [ "$$PAGES" -ne 2 ]; then \
+		echo "✗ Pagebreak test failed: expected 2 pages, got $$PAGES"; \
+		exit 1; \
+	fi; \
+	echo "✓ Pagebreak test passed (2 pages)"
 
 # Open bash shell in container
 shell:

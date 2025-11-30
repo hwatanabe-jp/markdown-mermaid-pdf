@@ -90,6 +90,20 @@ FROM markdown-mermaid-pdf:latest
 COPY my-custom-header.tex /config/header.tex
 ```
 
+### 改ページを指定するには？
+
+Markdown仕様には改ページの記法がありませんが、本コンテナには Lua フィルタを同梱しており、Markdown中に次のコメントを書くだけで PDF に改ページを挿入できます。
+
+```markdown
+ここが1ページ目の末尾です。
+
+<!-- pagebreak -->
+
+ここから2ページ目の本文です。
+```
+
+仕組み: `<!-- pagebreak -->` は Pandoc の Lua フィルタ `/config/pagebreak.lua` で検出され、LaTeX 出力では `\newpage` に変換されます。HTML 出力時は `page-break-after: always;` の div に変換されます。
+
 ## トラブルシューティング
 
 問題が発生した場合は [TROUBLESHOOTING.md](TROUBLESHOOTING.md) を参照してください。
