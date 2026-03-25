@@ -3,6 +3,7 @@ set -euo pipefail
 
 IMAGE_REF="${1:-}"
 WORKSPACE_DIR="${2:-$(pwd)/workspace}"
+DOCKER_PLATFORM="${DOCKER_PLATFORM:-}"
 
 if [ -z "${IMAGE_REF}" ]; then
   echo "Usage: smoke-test-image.sh <image-ref> [workspace-dir]"
@@ -15,6 +16,11 @@ if [ ! -d "${WORKSPACE_DIR}" ]; then
 fi
 
 WORKSPACE_DIR="$(cd "${WORKSPACE_DIR}" && pwd)"
+
+docker_run_args=(--rm)
+if [ -n "${DOCKER_PLATFORM}" ]; then
+  docker_run_args+=(--platform "${DOCKER_PLATFORM}")
+fi
 
 for required_file in example.md; do
   if [ ! -f "${WORKSPACE_DIR}/${required_file}" ]; then
@@ -37,7 +43,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Running smoke test against ${IMAGE_REF}"
-docker run --rm \
+docker run "${docker_run_args[@]}" \
   -v "${WORKSPACE_DIR}:/workspace" \
   "${IMAGE_REF}" \
   example.md "${EXAMPLE_OUTPUT}"
@@ -54,13 +60,13 @@ cat > "${WORKSPACE_DIR}/${PAGEBREAK_INPUT}" <<'EOF'
 EOF
 
 echo "Running pagebreak test against ${IMAGE_REF}"
-docker run --rm \
+docker run "${docker_run_args[@]}" \
   -v "${WORKSPACE_DIR}:/workspace" \
   "${IMAGE_REF}" \
   "${PAGEBREAK_INPUT}" "${PAGEBREAK_OUTPUT}"
 
 PAGE_COUNT="$(
-  docker run --rm \
+  docker run "${docker_run_args[@]}" \
     -v "${WORKSPACE_DIR}:/workspace" \
     --entrypoint pdfinfo \
     "${IMAGE_REF}" \
