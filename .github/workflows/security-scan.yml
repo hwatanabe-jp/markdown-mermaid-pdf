@@ -18,7 +18,18 @@ env:
 
 jobs:
   trivy:
-    runs-on: ubuntu-latest
+    name: Trivy (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - name: Checkout repository
@@ -51,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker pull "${{ steps.image.outputs.image_ref }}"
+          docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
       # Pin the setup action to the known-safe commit from the March 2026
       # supply-chain incident advisory rather than a mutable tag.
@@ -87,7 +98,7 @@ jobs:
             --severity CRITICAL \
             --timeout 10m \
             --format sarif \
-            --output trivy-results.sarif \
+            --output "trivy-results-${{ matrix.arch }}.sarif" \
             --no-progress \
             "${{ steps.image.outputs.image_ref }}"
 
@@ -95,4 +106,5 @@ jobs:
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: trivy-results-${{ matrix.arch }}.sarif
+          category: trivy-${{ matrix.arch }}
