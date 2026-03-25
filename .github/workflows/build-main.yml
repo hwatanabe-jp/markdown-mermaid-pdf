@@ -87,20 +87,6 @@ jobs:
           set -euo pipefail
           ./scripts/smoke-test-image.sh "${{ env.TEST_IMAGE_TAG }}"
 
-  build:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    needs:
-      - validate_amd64
-      - validate_arm64
-
-    steps:
-      - name: Confirm validation jobs passed
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "amd64 and arm64 validation jobs passed"
-
   publish_amd64:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
