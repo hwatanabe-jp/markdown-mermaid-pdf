@@ -106,11 +106,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Prepare arm64 smoke test Puppeteer config
+      - name: Prepare arm64 smoke test workspace
+        id: arm64_smoke_workspace
         shell: bash
         run: |
-          rm -f workspace/.puppeteer.json
-          cp config/.puppeteer.arm64-ci.json workspace/.puppeteer.json
+          set -euo pipefail
+          arm64_workspace="$(mktemp -d)"
+          cp config/ci-arm64-smoke.md "${arm64_workspace}/example.md"
+          cp config/.puppeteer.arm64-ci.json "${arm64_workspace}/.puppeteer.json"
+          echo "path=${arm64_workspace}" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test pushed arm64 candidate
         shell: bash
@@ -120,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           docker pull --platform "${DOCKER_PLATFORM}" "${IMAGE_REF}"
-          ./scripts/smoke-test-image.sh "${IMAGE_REF}"
+          ./scripts/smoke-test-image.sh "${IMAGE_REF}" "${{ steps.arm64_smoke_workspace.outputs.path }}"
 
       - name: Publish validated main manifest
         shell: bash
