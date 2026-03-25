@@ -16,7 +16,7 @@ fi
 
 WORKSPACE_DIR="$(cd "${WORKSPACE_DIR}" && pwd)"
 
-for required_file in example.md pagebreak-test.md; do
+for required_file in example.md; do
   if [ ! -f "${WORKSPACE_DIR}/${required_file}" ]; then
     echo "Error: required fixture '${WORKSPACE_DIR}/${required_file}' not found"
     exit 1
@@ -24,10 +24,14 @@ for required_file in example.md pagebreak-test.md; do
 done
 
 EXAMPLE_OUTPUT="smoke-test-${$}.pdf"
+PAGEBREAK_INPUT="pagebreak-test-${$}.md"
 PAGEBREAK_OUTPUT="pagebreak-test-${$}.pdf"
 
 cleanup() {
-  rm -f "${WORKSPACE_DIR}/${EXAMPLE_OUTPUT}" "${WORKSPACE_DIR}/${PAGEBREAK_OUTPUT}"
+  rm -f \
+    "${WORKSPACE_DIR}/${EXAMPLE_OUTPUT}" \
+    "${WORKSPACE_DIR}/${PAGEBREAK_INPUT}" \
+    "${WORKSPACE_DIR}/${PAGEBREAK_OUTPUT}"
 }
 
 trap cleanup EXIT
@@ -40,11 +44,20 @@ docker run --rm \
 
 test -f "${WORKSPACE_DIR}/${EXAMPLE_OUTPUT}"
 
+cat > "${WORKSPACE_DIR}/${PAGEBREAK_INPUT}" <<'EOF'
+# CI Pagebreak check
+1st page text.
+
+<!-- pagebreak -->
+
+2nd page text.
+EOF
+
 echo "Running pagebreak test against ${IMAGE_REF}"
 docker run --rm \
   -v "${WORKSPACE_DIR}:/workspace" \
   "${IMAGE_REF}" \
-  pagebreak-test.md "${PAGEBREAK_OUTPUT}"
+  "${PAGEBREAK_INPUT}" "${PAGEBREAK_OUTPUT}"
 
 PAGE_COUNT="$(
   docker run --rm \
