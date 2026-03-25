@@ -109,10 +109,11 @@ jobs:
       - name: Smoke test pushed arm64 candidate
         shell: bash
         env:
+          DOCKER_PLATFORM: linux/arm64
           IMAGE_REF: ${{ steps.meta.outputs.image_repo }}@${{ steps.build_arm64.outputs.digest }}
         run: |
           set -euo pipefail
-          docker pull "${IMAGE_REF}"
+          docker pull --platform "${DOCKER_PLATFORM}" "${IMAGE_REF}"
           ./scripts/smoke-test-image.sh "${IMAGE_REF}"
 
       - name: Publish validated main manifest
