@@ -101,12 +101,11 @@ docker compose version
 
 ## GitHub Actions の arm64 CI が遅い
 
-GitHub-hosted の x86_64 runner 上で `linux/arm64` を QEMU emulation すると、
-Chromium を使う Mermaid 描画は大きく遅くなることがあります。
+Chromium を使う Mermaid 描画は CPU とメモリを使うため、arm64 CI でも build や smoke test に時間がかかることがあります。
 
-- このリポジトリの `main` / release CI では、emulated `linux/arm64` は PDF 生成と pagebreak の lightweight smoke test に限定しています
-- Mermaid を含むフル smoke test は `linux/amd64` 側で実施します
-- arm64 で Mermaid 実描画まで厳密に確認したい場合は native arm64 runner を使ってください
+- このリポジトリの `main` / release CI は `ubuntu-24.04-arm` の native arm64 runner で `linux/arm64` を検証します
+- arm64 ジョブが混み合う場合は待機時間を含めて時間が伸びることがあります
+- `linux/amd64` と `linux/arm64` は別 job なので、どちらが遅いかを run ごとに切り分けて確認できます
 
 ## 権限エラー
 
