@@ -19,15 +19,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compute release metadata
         id: meta
@@ -44,60 +40,92 @@ jobs:
           echo "image_repo=${image_repo}" >>"$GITHUB_OUTPUT"
           echo "image_tag=${image_tag}" >>"$GITHUB_OUTPUT"
 
-      - name: Build and push container image
-        id: build
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build amd64 release candidate image
+        id: build_amd64
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          outputs: type=image,name=${{ steps.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: |
-            ${{ steps.meta.outputs.image_tag }}
-            ${{ steps.meta.outputs.image_repo }}:latest
 
-      - name: Verify pushed image manifest
+      - name: Smoke test pushed amd64 candidate
         shell: bash
+        env:
+          IMAGE_REF: ${{ steps.meta.outputs.image_repo }}@${{ steps.build_amd64.outputs.digest }}
         run: |
           set -euo pipefail
-          docker manifest inspect "${{ steps.meta.outputs.image_tag }}"
+          docker pull "${IMAGE_REF}"
+          ./scripts/smoke-test-image.sh "${IMAGE_REF}"
 
-      - name: Smoke test image functionality
+      - name: Capture bundled tool versions
         shell: bash
+        env:
+          IMAGE_REF: ${{ steps.meta.outputs.image_repo }}@${{ steps.build_amd64.outputs.digest }}
         run: |
           set -euo pipefail
-          docker pull "${{ steps.meta.outputs.image_tag }}"
-          mkdir -p workspace
-          rm -f workspace/test-output.pdf
           docker run --rm \
-            -v "$PWD/workspace:/workspace" \
-            "${{ steps.meta.outputs.image_tag }}" \
-            example.md test-output.pdf
-          test -f workspace/test-output.pdf
-          rm -f workspace/test-output.pdf
-
-      - name: Smoke test pagebreak marker
-        shell: bash
-        run: |
-          set -euo pipefail
-          docker pull "${{ steps.meta.outputs.image_tag }}"
-          mkdir -p workspace
-          printf '%s\n' '# CI Pagebreak check' '1st page text.' '' '<!-- pagebreak -->' '' '2nd page text.' > workspace/pagebreak-ci.md
-          docker run --rm \
-            -v "$PWD/workspace:/workspace" \
-            "${{ steps.meta.outputs.image_tag }}" \
-            pagebreak-ci.md pagebreak-ci.pdf
-          pages=$(docker run --rm \
-            -v "$PWD/workspace:/workspace" \
             --entrypoint /bin/bash \
-            "${{ steps.meta.outputs.image_tag }}" \
-            -c "pdfinfo pagebreak-ci.pdf | awk '/Pages/ {print \$2}'")
-          if [ "${pages}" != "2" ]; then
-            echo "Expected 2 pages, got ${pages}"
+            "${IMAGE_REF}" \
+            -lc '
+              {
+                echo "## Bundled Versions"
+                echo ""
+                echo "- Node.js: $(node --version)"
+                echo "- npm: $(npm --version)"
+                echo "- Pandoc: $(pandoc --version | head -n 1)"
+                echo "- XeLaTeX: $(xelatex --version | head -n 1)"
+                echo "- Chromium: $(chromium --version)"
+                echo "- Mermaid packages:"
+                npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null | sed "1d; s/^/  /"
+              } > /tmp/IMAGE_VERSIONS.md
+              cat /tmp/IMAGE_VERSIONS.md
+            ' > IMAGE_VERSIONS.md
+
+      - name: Build arm64 release candidate image
+        id: build_arm64
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          outputs: type=image,name=${{ steps.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Publish validated release manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            --tag "${{ steps.meta.outputs.image_tag }}" \
+            --tag "${{ steps.meta.outputs.image_repo }}:latest" \
+            "${{ steps.meta.outputs.image_repo }}@${{ steps.build_amd64.outputs.digest }}" \
+            "${{ steps.meta.outputs.image_repo }}@${{ steps.build_arm64.outputs.digest }}"
+
+      - name: Verify pushed image manifests
+        id: published
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect "${{ steps.meta.outputs.image_tag }}"
+          docker buildx imagetools inspect "${{ steps.meta.outputs.image_repo }}:latest"
+          digest="$(
+            docker buildx imagetools inspect "${{ steps.meta.outputs.image_tag }}" \
+              | awk '/^Digest:/ {print $2; exit}'
+          )"
+          if [ -z "${digest}" ]; then
+            echo "Failed to resolve published manifest digest" >&2
             exit 1
           fi
-          rm -f workspace/pagebreak-ci.md workspace/pagebreak-ci.pdf
+          echo "digest=${digest}" >>"$GITHUB_OUTPUT"
 
       - name: Prepare release notes
         id: notes
@@ -108,13 +136,17 @@ jobs:
             echo ""
             echo "- Source commit: ${{ github.sha }}"
             echo "- Image tag: ${{ steps.meta.outputs.image_tag }}"
+            echo "- Image digest: ${{ steps.published.outputs.digest }}"
             echo "- Platforms: linux/amd64, linux/arm64"
+            echo "- Tag policy: \`latest\` is reserved for stable releases; \`main\` tracks validated main-branch builds."
             echo ""
             echo "## Usage"
             echo '```bash'
             echo "docker pull ${{ steps.meta.outputs.image_tag }}"
             echo 'docker run --rm -v "$PWD/workspace:/workspace" ${{ steps.meta.outputs.image_tag }} document.md output.pdf'
             echo '```'
+            echo ""
+            cat IMAGE_VERSIONS.md
             echo ""
             echo "## Compliance"
             echo "- MIT-licensed project files (see attached LICENSE)"

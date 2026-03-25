@@ -1,0 +1,9 @@
+{
+  "theme": "default",
+  "themeVariables": {
+    "fontFamily": "\"Noto Sans CJK JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", \"MS Gothic\", sans-serif"
+  },
+  "puppeteerConfig": {
+    "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+  }
+}

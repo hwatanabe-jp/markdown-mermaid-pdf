@@ -108,30 +108,19 @@ The SIL OFL allows fonts to be freely used, studied, modified, and redistributed
 - **Source**: https://github.com/raghur/mermaid-filter
 - **License Text**: https://github.com/raghur/mermaid-filter/blob/master/LICENSE
 
+### Mermaid CLI (as dependency of mermaid-filter)
+
+- **License**: MIT License
+- **Copyright**: Mermaid contributors
+- **Source**: https://github.com/mermaid-js/mermaid-cli
+- **License Text**: https://github.com/mermaid-js/mermaid-cli/blob/master/LICENSE
+
 ### Mermaid (as dependency of mermaid-filter)
 
 - **License**: MIT License
 - **Copyright**: Knut Sveidqvist
 - **Source**: https://github.com/mermaid-js/mermaid
 - **License Text**: https://github.com/mermaid-js/mermaid/blob/develop/LICENSE
-
----
-
-## Utilities
-
-### yq (mikefarah/yq)
-
-- **License**: MIT License
-- **Copyright**: Mike Farah
-- **Source**: https://github.com/mikefarah/yq
-- **License Text**: https://github.com/mikefarah/yq/blob/master/LICENSE
-
-### git
-
-- **License**: GPL v2
-- **Copyright**: Linus Torvalds and contributors
-- **Source**: https://git-scm.com/
-- **License Text**: https://git-scm.com/about/free-and-open-source
 
 ---
 
@@ -143,12 +132,15 @@ This Docker image combines software under various licenses:
 | -------------- | ---------------- | -------------- | ------------ | ------------ | --------------- |
 | Debian         | Various OSS      | ✅             | ✅           | ✅           | ✅              |
 | Node.js        | MIT              | ✅             | ✅           | ✅           | ✅              |
+| npm            | Artistic-2.0     | ✅             | ✅           | ✅           | ✅              |
 | Pandoc         | GPL v2+          | ✅             | ✅           | ✅           | ✅              |
 | TeX Live       | LPPL             | ✅             | ✅           | ✅           | ✅              |
 | Noto Fonts     | SIL OFL 1.1      | ✅             | ✅           | ✅           | ✅              |
 | Chromium       | BSD / OSS bundle | ✅             | ✅           | ✅           | ✅              |
 | mermaid-filter | BSD-2-Clause     | ✅             | ✅           | ✅           | ✅              |
-| yq             | MIT              | ✅             | ✅           | ✅           | ✅              |
+| Mermaid CLI    | MIT              | ✅             | ✅           | ✅           | ✅              |
+| Mermaid        | MIT              | ✅             | ✅           | ✅           | ✅              |
+| Puppeteer      | Apache-2.0       | ✅             | ✅           | ✅           | ✅              |
 
 ---
 
@@ -167,7 +159,7 @@ When using this Docker image:
 If you plan to:
 
 - **Redistribute this image**: Include this THIRD_PARTY_NOTICES.md file
-- **Redistribute GPL components** (e.g., Pandoc, Git): Provide the GPL v2-or-later license text and the corresponding source code or a written offer for source when distributing binaries
+- **Redistribute GPL components** (e.g., Pandoc): Provide the GPL v2-or-later license text and the corresponding source code or a written offer for source when distributing binaries
 - **Modify and redistribute**: Maintain all license notices and comply with terms
 - **Commercial use**: All included components permit commercial use, but review individual licenses
 - **Public container registry**: Link to this file in your image description
@@ -178,13 +170,13 @@ To verify licenses of installed packages within the container:
 
 ```bash
 # Check Debian package licenses
-docker run --rm markdown-mermaid-pdf:latest dpkg -L <package-name> | grep copyright
+docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc 'dpkg -L <package-name> | grep copyright'
 
 # Check npm package licenses
-docker run --rm markdown-mermaid-pdf:latest npm list -g --depth=0 --json | jq '.dependencies[] | .license // "unknown"'
+docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc 'npm list --prefix /opt/mermaid-tools --depth=0'
 
 # Check font licenses
-docker run --rm markdown-mermaid-pdf:latest cat /usr/share/doc/fonts-noto-cjk/copyright
+docker run --rm --entrypoint cat markdown-mermaid-pdf:latest /usr/share/doc/fonts-noto-cjk/copyright
 ```
 
 ---
@@ -210,6 +202,6 @@ If you have questions about licensing or notice an inaccuracy in this document:
 
 ---
 
-**Last Updated**: 2025-10-28
+**Last Updated**: 2026-03-25
 
 **Note**: This notice is provided for informational purposes and does not constitute legal advice. Users are responsible for ensuring their use complies with all applicable licenses and terms of service.

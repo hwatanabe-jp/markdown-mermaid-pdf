@@ -17,51 +17,28 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 # Puppeteer needs these flags when running Chromium as root in Docker
 ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"
+ENV MERMAID_TOOLS_DIR=/opt/mermaid-tools
+ENV PATH=/opt/mermaid-tools/node_modules/.bin:${PATH}
 
-# Install Node.js 24, Chromium, git, and build dependencies in a single layer
-# Then cleanup build-only tools to reduce image size
+ARG NODE_MAJOR=24
+
+# Install Node.js from the explicit NodeSource apt repository, along with all
+# runtime packages needed for PDF generation.
 RUN apt-get update \
-    # Install build dependencies temporarily
     && apt-get install -y --no-install-recommends \
-        curl \
-        wget \
-        gnupg \
         ca-certificates \
-        git \
+        curl \
+        gpg \
         chromium \
-    # Install Node.js 24 (LTS)
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    # Install yq for YAML parsing (architecture-aware)
-    && ARCH=$(dpkg --print-architecture) \
-    && wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH} \
-    && chmod +x /usr/local/bin/yq \
-    # Provide chromium-browser alias for compatibility with tooling expectations
-    && ln -sf /usr/bin/chromium /usr/bin/chromium-browser \
-    # Cleanup: remove build-only tools (NOT git/chromium - they are runtime tools)
-    && apt-get purge -y curl wget gnupg \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && npm cache clean --force \
-    && rm -rf /root/.npm
-
-# Setup Chromium sandbox for Puppeteer if available
-RUN if [ -f /usr/lib/chromium/chrome-sandbox ]; then \
-        cp /usr/lib/chromium/chrome-sandbox /usr/local/sbin/chrome-devel-sandbox \
-        && chown root:root /usr/local/sbin/chrome-devel-sandbox \
-        && chmod 4755 /usr/local/sbin/chrome-devel-sandbox; \
-    else \
-        echo "Chromium sandbox not found at /usr/lib/chromium/chrome-sandbox - skipping"; \
-    fi
-
-# Install mermaid-filter globally (after PUPPETEER_SKIP_CHROMIUM_DOWNLOAD is set)
-RUN npm install -g mermaid-filter \
-    && npm cache clean --force \
-    && rm -rf /root/.npm
-
-# Install Pandoc and TeXLive
-RUN apt-get update \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && chmod a+r /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
+        nodejs \
         pandoc \
         poppler-utils \
         texlive-xetex \
@@ -73,208 +50,39 @@ RUN apt-get update \
         fonts-noto-cjk-extra \
         lmodern \
         latex-cjk-all \
-    && rm -rf /var/lib/apt/lists/*
+    && ln -sf /usr/bin/chromium /usr/bin/chromium-browser \
+    && apt-get purge -y curl gpg \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm cache clean --force
+
+# Setup Chromium sandbox for Puppeteer if available
+RUN if [ -f /usr/lib/chromium/chrome-sandbox ]; then \
+        cp /usr/lib/chromium/chrome-sandbox /usr/local/sbin/chrome-devel-sandbox \
+        && chown root:root /usr/local/sbin/chrome-devel-sandbox \
+        && chmod 4755 /usr/local/sbin/chrome-devel-sandbox; \
+    else \
+        echo "Chromium sandbox not found at /usr/lib/chromium/chrome-sandbox - skipping"; \
+    fi
+
+# Install pinned Mermaid tooling from the repository-managed lockfile.
+WORKDIR ${MERMAID_TOOLS_DIR}
+COPY container/npm/package.json container/npm/package-lock.json ./
+RUN npm ci --omit=dev \
+    && npm cache clean --force \
+    && rm -rf /root/.npm
 
 # Set environment variables for Puppeteer
 ENV CHROME_DEVEL_SANDBOX=/usr/local/sbin/chrome-devel-sandbox
 ENV PUPPETEER_DISABLE_HEADLESS_WARNING=true
 
-# Create configuration files
 WORKDIR /config
-
-# Create Puppeteer configuration for Chromium sandbox
-RUN cat > .puppeteer.json << 'EOF'
-{
-  "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-}
-EOF
-
-# Create Mermaid configuration for Japanese fonts
-RUN cat > .mermaid-config.json << 'EOF'
-{
-  "theme": "default",
-  "themeVariables": {
-    "fontFamily": "\"Noto Sans CJK JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", \"MS Gothic\", sans-serif"
-  },
-  "puppeteerConfig": {
-    "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-  }
-}
-EOF
-
-# Create Mermaid CSS for enforcing Japanese fonts
-RUN cat > .mermaid.css << 'EOF'
-/* Gantt chart title - 特に重要 */
-.titleText {
-  font-family: "Noto Sans CJK JP", sans-serif !important;
-}
-
-/* Section titles */
-.sectionTitle,
-.sectionTitle0,
-.sectionTitle1,
-.sectionTitle2,
-.sectionTitle3 {
-  font-family: "Noto Sans CJK JP", sans-serif !important;
-}
-
-/* Task text */
-.taskText,
-.taskText0,
-.taskText1,
-.taskText2,
-.taskText3,
-.taskTextOutsideRight,
-.taskTextOutsideLeft {
-  font-family: "Noto Sans CJK JP", sans-serif !important;
-}
-
-/* すべてのテキスト要素への一般的な適用 */
-text {
-  font-family: "Noto Sans CJK JP", sans-serif !important;
-}
-EOF
-
-# Create Pandoc header for font configuration
-RUN cat > header.tex << 'EOF'
-\usepackage{xeCJK}
-\setCJKmainfont[Scale=1.0]{Noto Sans CJK JP}
-\setmainfont[Scale=0.95]{DejaVu Sans}
-
-% Line spacing for better readability
-\usepackage{setspace}
-\setstretch{1.3}
-
-% Image placement - prevent floats from moving to end
-\usepackage{float}
-\floatplacement{figure}{H}
-
-% Add gray hash marks to headings
-\usepackage{xcolor}
-\usepackage[explicit]{titlesec}
-
-% # (Level 1 heading)
-\titleformat{\section}
-  {\Large\bfseries}
-  {}
-  {0em}
-  {\textcolor{gray!50}{\#}\quad#1}
-
-% ## (Level 2 heading)
-\titleformat{\subsection}
-  {\large\bfseries}
-  {}
-  {0em}
-  {\textcolor{gray!50}{\#\#}\quad#1}
-
-% ### (Level 3 heading)
-\titleformat{\subsubsection}
-  {\normalsize\bfseries}
-  {}
-  {0em}
-  {\textcolor{gray!50}{\#\#\#}\quad#1}
-EOF
-
-# Create Pandoc Lua filter for HTML comment based page breaks
-RUN cat > pagebreak.lua << 'EOF'
--- Convert HTML comment `<!-- pagebreak -->` into format-specific page breaks.
--- For LaTeX/PDF we emit \newpage, for HTML we emit a styled div, and fall back
--- to \newpage for other formats.
-
-local pattern = "^%s*<!%-%-%s*pagebreak%s*%-%->%s*$"
-
-local function make_break_block()
-  if FORMAT:match("latex") then
-    return pandoc.RawBlock("latex", "\\newpage")
-  elseif FORMAT:match("html") then
-    return pandoc.RawBlock("html", '<div style="page-break-after: always;"></div>')
-  else
-    return pandoc.RawBlock("latex", "\\newpage")
-  end
-end
-
-local function make_break_inline()
-  if FORMAT:match("latex") then
-    return pandoc.RawInline("latex", "\\newpage")
-  elseif FORMAT:match("html") then
-    return pandoc.RawInline("html", '<div style="page-break-after: always;"></div>')
-  else
-    return pandoc.RawInline("latex", "\\newpage")
-  end
-end
-
-function RawBlock(el)
-  if el.format == "html" and el.text:match(pattern) then
-    return make_break_block()
-  end
-  return nil
-end
-
-function RawInline(el)
-  if el.format == "html" and el.text:match(pattern) then
-    return make_break_inline()
-  end
-  return nil
-end
-EOF
+COPY config/ /config/
 
 # Set working directory for PDF generation
 WORKDIR /workspace
 
-# Create entrypoint script
-RUN cat > /usr/local/bin/generate-pdf.sh << 'EOF'
-#!/bin/bash
-set -e
-
-INPUT_MD="${1}"
-OUTPUT_PDF="${2:-${INPUT_MD%.md}.pdf}"
-
-if [ -z "$INPUT_MD" ]; then
-  echo "Usage: generate-pdf.sh <input.md> [output.pdf]"
-  echo "Example: generate-pdf.sh document.md output.pdf"
-  exit 1
-fi
-
-if [ ! -f "$INPUT_MD" ]; then
-  echo "Error: Input file '$INPUT_MD' not found"
-  exit 1
-fi
-
-echo "Generating PDF: $INPUT_MD -> $OUTPUT_PDF"
-
-# Ensure Mermaid styles, configuration, and puppeteer options are available in the working directory
-if [ ! -f .mermaid-config.json ]; then
-  cp /config/.mermaid-config.json .
-fi
-if [ ! -f .puppeteer.json ]; then
-  cp /config/.puppeteer.json .
-fi
-if [ ! -f .mermaid.css ]; then
-  cp /config/.mermaid.css .
-fi
-
-pandoc "$INPUT_MD" \
-  -o "$OUTPUT_PDF" \
-  --pdf-engine=xelatex \
-  --resource-path="$(dirname "$INPUT_MD"):." \
-  -L /config/pagebreak.lua \
-  --filter=mermaid-filter \
-  --include-in-header=/config/header.tex \
-  -V geometry:margin=20mm \
-  -V documentclass=article \
-  -V papersize=a4 \
-  -V subparagraph=yes \
-  --verbose
-
-if [ $? -eq 0 ]; then
-  echo "✓ Successfully generated: $OUTPUT_PDF"
-  ls -lh "$OUTPUT_PDF"
-else
-  echo "✗ Failed to generate: $OUTPUT_PDF"
-  exit 1
-fi
-EOF
-
+COPY scripts/generate-pdf.sh /usr/local/bin/generate-pdf.sh
 RUN chmod +x /usr/local/bin/generate-pdf.sh
 
 # Verify installations
@@ -284,7 +92,7 @@ RUN echo "=== Version Information ===" \
     && chromium --version \
     && pandoc --version | head -n 1 \
     && xelatex --version | head -n 1 \
-    && yq --version \
+    && npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null \
     && echo "mermaid-filter: $(which mermaid-filter)" \
     && fc-list | grep -i "noto sans cjk jp" | head -n 1
 

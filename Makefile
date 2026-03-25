@@ -5,7 +5,7 @@ help:
 	@echo "Markdown Mermaid PDF - Available commands:"
 	@echo ""
 	@echo "  make build          - Build Docker image"
-	@echo "  make run            - Run container interactively"
+	@echo "  make run            - Open a shell via Docker Compose"
 	@echo "  make example        - Generate PDF from example.md"
 	@echo "  make test           - Test PDF generation"
 	@echo "  make shell          - Open bash shell in container"
@@ -26,9 +26,7 @@ rebuild:
 	docker build --no-cache -t markdown-mermaid-pdf:latest .
 
 # Run container interactively
-run:
-	@echo "Starting container..."
-	docker compose run --rm markdown-mermaid-pdf
+run: shell
 
 # Generate PDF from example.md
 example:
@@ -44,42 +42,14 @@ example:
 	@echo "Done! Check workspace/example.pdf"
 
 # Test PDF generation with example
-test: example
+test:
 	@echo "Testing PDF generation..."
-	@if [ -f workspace/example.pdf ]; then \
-		echo "✓ Test passed: example.pdf generated successfully"; \
-		ls -lh workspace/example.pdf; \
-	else \
-		echo "✗ Test failed: example.pdf not found"; \
-		exit 1; \
-	fi
-	@echo "Running pagebreak marker test..."
-	@docker run --rm \
-		-v $$(pwd)/workspace:/workspace \
-		markdown-mermaid-pdf:latest \
-		pagebreak-test.md pagebreak-test.pdf
-	@PAGES=$$(docker run --rm \
-		-v $$(pwd)/workspace:/workspace \
-		--entrypoint pdfinfo \
-		markdown-mermaid-pdf:latest \
-		pagebreak-test.pdf 2>/dev/null | awk '/Pages/ {print $$2}'); \
-	if [ -z "$$PAGES" ]; then \
-		echo "✗ Pagebreak test failed: could not read page count"; \
-		exit 1; \
-	fi; \
-	if [ "$$PAGES" -ne 2 ]; then \
-		echo "✗ Pagebreak test failed: expected 2 pages, got $$PAGES"; \
-		exit 1; \
-	fi; \
-	echo "✓ Pagebreak test passed (2 pages)"
+	@./scripts/smoke-test-image.sh markdown-mermaid-pdf:latest
 
 # Open bash shell in container
 shell:
 	@echo "Opening shell in container..."
-	docker run --rm -it \
-		-v $$(pwd)/workspace:/workspace \
-		--entrypoint /bin/bash \
-		markdown-mermaid-pdf:latest
+	docker compose run --rm markdown-mermaid-pdf-shell
 
 # Clean generated files and Docker artifacts
 clean:
@@ -123,12 +93,13 @@ info:
 	@docker images markdown-mermaid-pdf:latest
 	@echo ""
 	@echo "Installed tools versions:"
-	@docker run --rm markdown-mermaid-pdf:latest /bin/bash -c "\
+	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "\
 		echo 'Node.js:' && node --version && \
+		echo 'npm:' && npm --version && \
 		echo 'Pandoc:' && pandoc --version | head -n 1 && \
 		echo 'XeLaTeX:' && xelatex --version | head -n 1 && \
-		echo 'yq:' && yq --version && \
-		echo 'mermaid-filter:' && which mermaid-filter"
+		echo 'Chromium:' && chromium --version && \
+		echo 'Mermaid packages:' && npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null"
 
 # Verify licenses and third-party components
 license-check:
@@ -155,12 +126,12 @@ license-check:
 		echo "   ✓ License label found in image" || \
 		echo "   ⚠ License label not found (image may need rebuilding)"
 	@echo ""
-	@echo "4. Auditing npm packages in image:"
-	@docker run --rm markdown-mermaid-pdf:latest npm list -g --depth=0 2>/dev/null || echo "   (npm packages listed above)"
+	@echo "4. Auditing Mermaid npm packages in image:"
+	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null" || echo "   (npm packages listed above)"
 	@echo ""
 	@echo "5. Checking Debian package licenses:"
 	@echo "   (Sample check for key packages)"
-	@docker run --rm markdown-mermaid-pdf:latest dpkg -l | grep -E "pandoc|git|texlive-xetex|fonts-noto-cjk" | head -n 5
+	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "dpkg -l | grep -E 'pandoc|chromium|texlive-xetex|fonts-noto-cjk' | head -n 5"
 	@echo ""
 	@echo "✓ License compliance check complete"
 	@echo ""

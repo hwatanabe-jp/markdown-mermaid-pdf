@@ -7,7 +7,7 @@
 コンテナ内でフォントを確認：
 
 ```bash
-docker run --rm markdown-mermaid-pdf:latest fc-list | grep -i "noto sans cjk jp"
+docker run --rm --entrypoint fc-list markdown-mermaid-pdf:latest | grep -i "noto sans cjk jp"
 ```
 
 フォントが見つからない場合は、イメージを再ビルドしてください：
@@ -40,6 +40,10 @@ docker run --rm \
 
 3. **ネットワークタイムアウト**
    - Puppeteer がタイムアウトしている場合、`.puppeteer.json` の設定を調整
+
+4. **信頼できない入力を処理している**
+   - このコンテナは Chromium を `--no-sandbox` 付きで起動します
+   - 外部から受け取った未検証の Markdown / Mermaid をそのまま処理しないでください
 
 ## PDF が生成されない
 
@@ -107,6 +111,15 @@ sudo chown -R $USER:$USER workspace/
 docker run --rm --user $(id -u):$(id -g) \
   -v $(pwd)/workspace:/workspace \
   markdown-mermaid-pdf:latest \
+  document.md output.pdf
+```
+
+Docker Compose を使う場合も同様に `--user` を付けられます：
+
+```bash
+docker compose run --rm \
+  --user $(id -u):$(id -g) \
+  markdown-mermaid-pdf \
   document.md output.pdf
 ```
 

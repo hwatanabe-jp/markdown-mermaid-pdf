@@ -40,21 +40,33 @@ make help  # コマンド一覧を表示
 ### Docker を直接使用
 
 ```bash
+# 公開済みの安定版を取得
+docker pull ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest
+
 # PDF を生成
 docker run --rm \
   -v $(pwd)/workspace:/workspace \
-  markdown-mermaid-pdf:latest \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest \
   document.md output.pdf
 
 # コンテナ内でシェルを起動
 docker run --rm -it \
   -v $(pwd)/workspace:/workspace \
-  markdown-mermaid-pdf:latest \
-  bash
+  --entrypoint /bin/bash \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest
 
 # Docker Compose を使用
 docker compose run --rm markdown-mermaid-pdf document.md output.pdf
+
+# Docker Compose でシェルを起動
+docker compose run --rm markdown-mermaid-pdf-shell
 ```
+
+公開タグの運用方針:
+
+- `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` は安定版リリース専用です
+- `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` は `main` ブランチの検証済みビルドです
+- ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
 
 ## Makefile コマンド一覧
 
@@ -104,6 +116,20 @@ Markdown仕様には改ページの記法がありませんが、本コンテナ
 
 仕組み: `<!-- pagebreak -->` は Pandoc の Lua フィルタ `/config/pagebreak.lua` で検出され、LaTeX 出力では `\newpage` に変換されます。HTML 出力時は `page-break-after: always;` の div に変換されます。
 
+## セキュリティと実行モデル
+
+- Mermaid 描画は Chromium を `--no-sandbox` 付きで起動するため、信頼できる入力だけを処理してください
+- 既定ではコンテナは root で動作するため、bind mount した出力ファイルの所有者が期待とずれる場合があります
+- 所有権をホスト側に合わせたい場合は `--user $(id -u):$(id -g)` を指定してください
+
+```bash
+docker run --rm \
+  --user $(id -u):$(id -g) \
+  -v $(pwd)/workspace:/workspace \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest \
+  document.md output.pdf
+```
+
 ## トラブルシューティング
 
 問題が発生した場合は [TROUBLESHOOTING.md](TROUBLESHOOTING.md) を参照してください。
@@ -117,7 +143,7 @@ Markdown仕様には改ページの記法がありませんが、本コンテナ
 この Docker イメージには以下のオープンソースソフトウェアが含まれています：
 
 - Pandoc (GPL v2+), XeLaTeX/TeX Live (LPPL), Chromium (BSD 3-Clause)
-- Node.js, mermaid-filter, yq (MIT License)
+- Node.js (MIT), npm (Artistic License 2.0), mermaid-filter (BSD 2-Clause)
 - Noto Sans CJK JP (SIL Open Font License 1.1)
 
 すべてのコンポーネントは商用利用可能です。詳細は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照してください。

@@ -1,0 +1,29 @@
+/* Gantt chart title - 特に重要 */
+.titleText {
+  font-family: "Noto Sans CJK JP", sans-serif !important;
+}
+
+/* Section titles */
+.sectionTitle,
+.sectionTitle0,
+.sectionTitle1,
+.sectionTitle2,
+.sectionTitle3 {
+  font-family: "Noto Sans CJK JP", sans-serif !important;
+}
+
+/* Task text */
+.taskText,
+.taskText0,
+.taskText1,
+.taskText2,
+.taskText3,
+.taskTextOutsideRight,
+.taskTextOutsideLeft {
+  font-family: "Noto Sans CJK JP", sans-serif !important;
+}
+
+/* すべてのテキスト要素への一般的な適用 */
+text {
+  font-family: "Noto Sans CJK JP", sans-serif !important;
+}

@@ -1,0 +1,9 @@
+{
+  "name": "markdown-mermaid-pdf-tools",
+  "private": true,
+  "description": "Pinned Mermaid tooling for the markdown-mermaid-pdf container image",
+  "license": "MIT",
+  "dependencies": {
+    "mermaid-filter": "1.4.7"
+  }
+}

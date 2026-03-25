@@ -1,0 +1,36 @@
+\usepackage{xeCJK}
+\setCJKmainfont[Scale=1.0]{Noto Sans CJK JP}
+\setmainfont[Scale=0.95]{DejaVu Sans}
+
+% Line spacing for better readability
+\usepackage{setspace}
+\setstretch{1.3}
+
+% Image placement - prevent floats from moving to end
+\usepackage{float}
+\floatplacement{figure}{H}
+
+% Add gray hash marks to headings
+\usepackage{xcolor}
+\usepackage[explicit]{titlesec}
+
+% # (Level 1 heading)
+\titleformat{\section}
+  {\Large\bfseries}
+  {}
+  {0em}
+  {\textcolor{gray!50}{\#}\quad#1}
+
+% ## (Level 2 heading)
+\titleformat{\subsection}
+  {\large\bfseries}
+  {}
+  {0em}
+  {\textcolor{gray!50}{\#\#}\quad#1}
+
+% ### (Level 3 heading)
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}
+  {}
+  {0em}
+  {\textcolor{gray!50}{\#\#\#}\quad#1}

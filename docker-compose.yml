@@ -1,16 +1,20 @@
-version: '3.8'
-
 services:
   markdown-mermaid-pdf:
     build:
       context: .
       dockerfile: Dockerfile
     image: markdown-mermaid-pdf:latest
-    container_name: markdown-mermaid-pdf-converter
     volumes:
-      # Mount current directory to /workspace in container
       - ./workspace:/workspace
-    # Override entrypoint for interactive use
+    working_dir: /workspace
+
+  markdown-mermaid-pdf-shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: markdown-mermaid-pdf:latest
+    volumes:
+      - ./workspace:/workspace
     entrypoint: /bin/bash
     stdin_open: true
     tty: true
