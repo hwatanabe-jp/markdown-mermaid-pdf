@@ -113,7 +113,6 @@ jobs:
           set -euo pipefail
           arm64_workspace="$(mktemp -d)"
           cp config/ci-arm64-smoke.md "${arm64_workspace}/example.md"
-          cp config/.puppeteer.arm64-ci.json "${arm64_workspace}/.puppeteer.json"
           echo "path=${arm64_workspace}" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test pushed arm64 candidate

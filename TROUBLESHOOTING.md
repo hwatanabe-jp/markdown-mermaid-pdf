@@ -99,6 +99,15 @@ docker compose version
    - 各図表は Chromium を起動するため時間がかかる
    - 必要に応じて図表を外部画像として保存し埋め込む
 
+## GitHub Actions の arm64 CI が遅い
+
+GitHub-hosted の x86_64 runner 上で `linux/arm64` を QEMU emulation すると、
+Chromium を使う Mermaid 描画は大きく遅くなることがあります。
+
+- このリポジトリの `main` / release CI では、emulated `linux/arm64` は PDF 生成と pagebreak の lightweight smoke test に限定しています
+- Mermaid を含むフル smoke test は `linux/amd64` 側で実施します
+- arm64 で Mermaid 実描画まで厳密に確認したい場合は native arm64 runner を使ってください
+
 ## 権限エラー
 
 コンテナがルートユーザーとして実行されるため、生成されたファイルの所有権が変更される場合があります：
