@@ -54,6 +54,17 @@ docker run --rm -it \
   -v $(pwd)/workspace:/workspace \
   --entrypoint /bin/bash \
   ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest
+```
+
+`ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` を使うと、`main` ブランチの検証済みビルドも取得できます。
+
+### Docker Compose を使用（ローカルビルド前提）
+
+現在の `docker-compose.yml` は手元用の `markdown-mermaid-pdf:latest` を使う構成です。先に `make build` または `docker compose build` を実行してください。
+
+```bash
+# ローカル用イメージをビルド
+docker compose build
 
 # Docker Compose を使用
 docker compose run --rm markdown-mermaid-pdf document.md output.pdf
@@ -66,6 +77,8 @@ docker compose run --rm markdown-mermaid-pdf-shell
 
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` は安定版リリース専用です
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` は `main` ブランチの検証済みビルドです
+- 公開リリースは `linux/amd64` と `linux/arm64` の smoke test を通したマルチアーキテクチャイメージです
+- 安定版タグはリリース時に脆弱性スキャンし、`latest` は定期的にも再スキャンします
 - ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
 
 ## Makefile コマンド一覧
@@ -74,6 +87,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | --------------------------- | ------------------------------------- |
 | `make build`                | Docker イメージをビルド               |
 | `make rebuild`              | キャッシュなしで再ビルド              |
+| `make run`                  | Docker Compose 経由でシェルを起動     |
 | `make example`              | example.md から PDF を生成            |
 | `make test`                 | PDF が正常に生成されるかテスト        |
 | `make convert INPUT=<file>` | 指定したファイルを変換                |
@@ -98,7 +112,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 カスタム設定でイメージを再ビルドする例：
 
 ```dockerfile
-FROM markdown-mermaid-pdf:latest
+FROM ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest
 COPY my-custom-header.tex /config/header.tex
 ```
 
