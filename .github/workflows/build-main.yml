@@ -108,7 +108,9 @@ jobs:
 
       - name: Prepare arm64 smoke test Puppeteer config
         shell: bash
-        run: cp config/.puppeteer.arm64-ci.json workspace/.puppeteer.json
+        run: |
+          rm -f workspace/.puppeteer.json
+          cp config/.puppeteer.arm64-ci.json workspace/.puppeteer.json
 
       - name: Smoke test pushed arm64 candidate
         shell: bash
