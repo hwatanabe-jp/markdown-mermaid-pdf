@@ -31,7 +31,8 @@ docker run --rm \
 ### よくある原因
 
 1. **Chromium の起動に失敗している**
-   - コンテナが `--no-sandbox` フラグで起動しているか確認
+   - このイメージは既定で Puppeteer/Chromium に `--no-sandbox --disable-setuid-sandbox` を渡します
+   - ワークスペース内の `.puppeteer.json` や `.mermaid-config.json` を自前で置いている場合は、その設定で上書きしていないか確認
    - Docker が十分なメモリを確保しているか確認（推奨: 2GB以上）
 
 2. **Mermaid 構文エラー**
@@ -101,11 +102,11 @@ docker compose version
 
 ## GitHub Actions の arm64 CI が遅い
 
-Chromium を使う Mermaid 描画は CPU とメモリを使うため、arm64 CI でも build や smoke test に時間がかかることがあります。
+Mermaid 描画（Chromium）は CPU とメモリを使うため、build や smoke test に時間がかかることがあります。
 
-- このリポジトリの `main` / release CI は `ubuntu-24.04-arm` の native arm64 runner で `linux/arm64` を検証します
-- arm64 ジョブが混み合う場合は待機時間を含めて時間が伸びることがあります
-- `linux/amd64` と `linux/arm64` は別 job なので、どちらが遅いかを run ごとに切り分けて確認できます
+- `main` / release CI は `ubuntu-24.04-arm` の native runner で `linux/arm64` を検証します
+- runner が混み合うと待機時間も加わります
+- `linux/amd64` と `linux/arm64` は別 job なので、どちらが遅いかを run ごとに切り分けられます
 
 ## 権限エラー
 

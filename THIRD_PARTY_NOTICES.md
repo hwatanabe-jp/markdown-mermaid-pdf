@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This Docker image incorporates the following third-party software and resources. Each component is subject to its respective license terms.
+This Docker image incorporates the following bundled third-party software and resources. The list focuses on the major packaged components that ship in the image; Debian package-level copyright and license texts remain available under `/usr/share/doc/*/copyright` inside the container.
 
 ---
 
@@ -42,6 +42,13 @@ This Docker image incorporates the following third-party software and resources.
 - **Source**: https://pandoc.org/
 - **License Text**: https://github.com/jgm/pandoc/blob/main/COPYRIGHT
 
+### Poppler Utils (`pdfinfo`)
+
+- **License**: Various Open Source licenses
+- **Copyright**: Poppler contributors and downstream Debian maintainers
+- **Source**: https://poppler.freedesktop.org/
+- **License Details**: `/usr/share/doc/poppler-utils/copyright` within the container
+
 ### XeLaTeX (TeX Live)
 
 - **License**: Various (primarily LaTeX Project Public License - LPPL)
@@ -73,6 +80,13 @@ This Docker image incorporates the following third-party software and resources.
 
 The SIL OFL allows fonts to be freely used, studied, modified, and redistributed as long as they are not sold by themselves and the copyright and license notices are maintained.
 
+### Noto CJK Supplemental Fonts (`fonts-noto-cjk-extra`)
+
+- **License**: SIL Open Font License 1.1 (OFL-1.1)
+- **Copyright**: Google Inc.
+- **Source**: https://github.com/notofonts/noto-cjk
+- **License Text**: https://github.com/notofonts/noto-cjk/blob/main/LICENSE
+
 ---
 
 ## Browser & Rendering
@@ -83,12 +97,6 @@ The SIL OFL allows fonts to be freely used, studied, modified, and redistributed
 - **Copyright**: The Chromium Authors
 - **Source**: https://chromium.googlesource.com/chromium/src/
 - **License Text**: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/LICENSE
-
-**Important Notes**:
-
-- Chromium is an open-source browser project; downstream distributions may include additional codecs or proprietary components
-- Redistribution is permitted under the BSD and other included OSS licenses as long as notices are preserved
-- Puppeteer (used by mermaid-filter) is fully compatible with Chromium
 
 ### Puppeteer (as dependency of mermaid-filter)
 
@@ -134,8 +142,10 @@ This Docker image combines software under various licenses:
 | Node.js        | MIT              | ✅             | ✅           | ✅           | ✅              |
 | npm            | Artistic-2.0     | ✅             | ✅           | ✅           | ✅              |
 | Pandoc         | GPL v2+          | ✅             | ✅           | ✅           | ✅              |
+| Poppler Utils  | Various OSS      | ✅             | ✅           | ✅           | ✅              |
 | TeX Live       | LPPL             | ✅             | ✅           | ✅           | ✅              |
 | Noto Fonts     | SIL OFL 1.1      | ✅             | ✅           | ✅           | ✅              |
+| Noto CJK Extra | SIL OFL 1.1      | ✅             | ✅           | ✅           | ✅              |
 | Chromium       | BSD / OSS bundle | ✅             | ✅           | ✅           | ✅              |
 | mermaid-filter | BSD-2-Clause     | ✅             | ✅           | ✅           | ✅              |
 | Mermaid CLI    | MIT              | ✅             | ✅           | ✅           | ✅              |
@@ -188,20 +198,16 @@ When updating dependencies:
 1. Check new package licenses: `apt-cache show <pkg> | grep License`
 2. For npm: `npm view <package> license`
 3. Update this file with new components
-4. Consider automated license scanning in CI/CD
+4. Run `make license-check` to check the updated image
 
 ---
 
 ## Questions or Concerns
 
-If you have questions about licensing or notice an inaccuracy in this document:
-
-- Open an issue in the repository
-- Consult the original license texts linked above
-- Seek legal advice for specific compliance questions
+If you have questions about licensing or notice an inaccuracy, please open an issue — for specific compliance questions, consult the original license texts linked above or seek legal advice.
 
 ---
 
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-03-26
 
-**Note**: This notice is provided for informational purposes and does not constitute legal advice. Users are responsible for ensuring their use complies with all applicable licenses and terms of service.
+**Note**: This notice is informational and does not constitute legal advice.
