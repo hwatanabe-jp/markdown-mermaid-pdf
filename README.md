@@ -77,9 +77,8 @@ docker compose run --rm markdown-mermaid-pdf-shell
 
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` は安定版リリース専用です
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` は `main` ブランチの検証済みビルドです
-- 公開リリースは `linux/amd64` と `linux/arm64` の smoke test を通したマルチアーキテクチャイメージです
-- `linux/amd64` と `linux/arm64` はそれぞれ対応する native GitHub-hosted runner 上で smoke test を実施します
-- 安定版タグは `linux/amd64` と `linux/arm64` の両方をリリース時に脆弱性スキャンし、`latest` は定期的にも再スキャンします
+- 公開リリースは `linux/amd64` と `linux/arm64` の native runner で smoke test 済みのマルチアーキテクチャイメージです
+- 安定版タグはリリース時に両アーキテクチャを脆弱性スキャンし、`latest` は定期的にも再スキャンします
 - ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
 
 ## Makefile コマンド一覧
@@ -129,7 +128,7 @@ Markdown仕様には改ページの記法がありませんが、本コンテナ
 ここから2ページ目の本文です。
 ```
 
-仕組み: `<!-- pagebreak -->` は Pandoc の Lua フィルタ `/config/pagebreak.lua` で検出され、LaTeX 出力では `\newpage` に変換されます。HTML 出力時は `page-break-after: always;` の div に変換されます。
+仕組み: `<!-- pagebreak -->` は Lua フィルタ `/config/pagebreak.lua` が検出し、LaTeX では `\newpage`、HTML では改ページ用 div に変換します。
 
 ## セキュリティと実行モデル
 

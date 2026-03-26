@@ -39,7 +39,7 @@ Keep the workflow minimal, calm, and professional:
 
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` is for stable releases only.
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` is for validated `main` branch builds.
-- Public releases happen from Git tags in the form `vX.Y.Z`.
+- Public releases are triggered from Git tags starting with `v`; use `vX.Y.Z` for normal stable releases.
 - Do not repurpose `latest` for development snapshots.
 - Keep release flow simple: develop on `main`, validate, tag, release.
 
