@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Resolve stable image reference
         id: image
@@ -60,7 +60,7 @@ jobs:
           echo "image_ref=${image_ref}" >>"$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -72,10 +72,10 @@ jobs:
           set -euo pipefail
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
-      # Pin the setup action to the known-safe commit from the March 2026
-      # supply-chain incident advisory rather than a mutable tag.
+      # Pin the setup action itself to the known-safe v0.2.6 commit from the
+      # March 2026 supply-chain incident advisory and install Trivy explicitly.
       - name: Set up Trivy
-        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # setup-trivy v0.2.6
         with:
           version: v0.69.3
           cache: true
@@ -110,9 +110,19 @@ jobs:
             --no-progress \
             "${{ steps.image.outputs.image_ref }}"
 
+      - name: Fail on high npm advisories in bundled Mermaid packages
+        if: matrix.arch == 'amd64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --entrypoint /bin/bash \
+            "${{ steps.image.outputs.image_ref }}" \
+            -lc 'npm audit --prefix /opt/mermaid-tools --omit=dev --audit-level=high'
+
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
           category: trivy-${{ matrix.arch }}

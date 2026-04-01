@@ -78,7 +78,9 @@ docker compose run --rm markdown-mermaid-pdf-shell
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` は安定版リリース専用です
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` は `main` ブランチの検証済みビルドです
 - 公開リリースは `linux/amd64` と `linux/arm64` の native runner で smoke test 済みのマルチアーキテクチャイメージです
-- 安定版タグはリリース時に両アーキテクチャを脆弱性スキャンし、`latest` は定期的にも再スキャンします
+- release / main CI の GitHub Actions は full commit SHA に固定しています
+- 公開イメージには build provenance と SBOM attestation を付与します
+- Mermaid 系 npm 依存は CI で high/critical advisory を検査し、安定版 `latest` も定期スキャンします
 - ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
 
 ## Makefile コマンド一覧

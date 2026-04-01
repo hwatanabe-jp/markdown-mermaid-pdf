@@ -68,7 +68,9 @@ RUN if [ -f /usr/lib/chromium/chrome-sandbox ]; then \
 # Install pinned Mermaid tooling from the repository-managed lockfile.
 WORKDIR ${MERMAID_TOOLS_DIR}
 COPY container/npm/package.json container/npm/package-lock.json ./
-RUN npm ci --omit=dev \
+# Suppress lifecycle scripts to avoid arbitrary postinstall execution.
+# Puppeteer uses the system Chromium configured above instead of downloading one.
+RUN npm ci --omit=dev --ignore-scripts \
     && npm cache clean --force \
     && rm -rf /root/.npm
 
