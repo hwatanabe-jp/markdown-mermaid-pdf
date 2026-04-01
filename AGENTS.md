@@ -27,10 +27,11 @@ Keep the workflow minimal, calm, and professional:
 
 - Treat `main` as the day-to-day development branch and keep it in a working state.
 - Prefer short-lived branches only for larger or riskier changes.
-- Before considering work complete, run the smallest relevant local checks.
-- Default local checks:
+- Before considering work complete, run the smallest relevant local checks when practical.
+- Default local Docker checks when they are relevant are recommended, but not mandatory for every change:
   - `docker build -t markdown-mermaid-pdf:latest .`
   - `./scripts/smoke-test-image.sh markdown-mermaid-pdf:latest`
+- If those Docker checks are skipped, say so clearly in the final handoff.
 - If dependency, version, or compliance-related files change, also run:
   - `make info`
   - `make license-check`

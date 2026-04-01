@@ -230,6 +230,8 @@ jobs:
 
       - name: Verify pushed image manifest
         shell: bash
+        env:
+          IMAGE_REF: ${{ needs.meta.outputs.image_repo }}:main
         run: |
           set -euo pipefail
-          docker buildx imagetools inspect "${{ needs.meta.outputs.image_repo }}:main"
+          ./scripts/inspect-image-manifest.sh "${IMAGE_REF}"
