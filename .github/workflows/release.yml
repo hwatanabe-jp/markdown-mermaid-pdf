@@ -195,18 +195,14 @@ jobs:
       - name: Verify pushed image manifests
         id: published
         shell: bash
+        env:
+          IMAGE_TAG: ${{ needs.meta.outputs.image_tag }}
+          LATEST_TAG: ${{ needs.meta.outputs.image_repo }}:latest
         run: |
           set -euo pipefail
-          docker buildx imagetools inspect "${{ needs.meta.outputs.image_tag }}"
-          docker buildx imagetools inspect "${{ needs.meta.outputs.image_repo }}:latest"
-          digest="$(
-            docker buildx imagetools inspect "${{ needs.meta.outputs.image_tag }}" \
-              | awk '/^Digest:/ {print $2; exit}'
-          )"
-          if [ -z "${digest}" ]; then
-            echo "Failed to resolve published manifest digest" >&2
-            exit 1
-          fi
+          ./scripts/inspect-image-manifest.sh "${IMAGE_TAG}"
+          ./scripts/inspect-image-manifest.sh "${LATEST_TAG}"
+          digest="$(./scripts/inspect-image-manifest.sh "${IMAGE_TAG}" digest)"
           echo "digest=${digest}" >>"$GITHUB_OUTPUT"
 
       - name: Prepare release notes
