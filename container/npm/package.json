@@ -7,6 +7,8 @@
     "mermaid-filter": "1.4.7"
   },
   "overrides": {
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1",
     "tar-fs": "3.1.2",
     "tmp": "0.2.5",
     "ws": "8.20.0"
