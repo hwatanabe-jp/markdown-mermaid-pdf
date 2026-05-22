@@ -60,7 +60,7 @@ jobs:
           echo "image_ref=${image_ref}" >>"$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -73,11 +73,11 @@ jobs:
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
       # Pin setup-trivy to the restored safe v0.2.6 commit and keep the Trivy
-      # binary on the advisory-listed safe v0.69.3 release.
+      # binary on the latest checked v0.70.0 release.
       - name: Set up Trivy
         uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # setup-trivy v0.2.6
         with:
-          version: v0.69.3
+          version: v0.70.0
           cache: true
 
       - name: Fail on fixed critical vulnerabilities or EOL base images
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/upload-sarif@f52b05f4acaaa234e44466e66d29050e135ea9ef # v4.36.0
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
           category: trivy-${{ matrix.arch }}

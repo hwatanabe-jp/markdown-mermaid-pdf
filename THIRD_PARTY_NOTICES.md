@@ -208,6 +208,6 @@ If you have questions about licensing or notice an inaccuracy, please open an is
 
 ---
 
-**Last Updated**: 2026-03-26
+**Last Updated**: 2026-05-23
 
 **Note**: This notice is informational and does not constitute legal advice.
