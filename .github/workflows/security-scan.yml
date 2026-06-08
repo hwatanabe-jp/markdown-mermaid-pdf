@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Resolve stable image reference
         id: image
@@ -72,12 +72,12 @@ jobs:
           set -euo pipefail
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
-      # Pin setup-trivy to the restored safe v0.2.6 commit and keep the Trivy
-      # binary on the latest checked v0.70.0 release.
+      # Pin setup-trivy to a checked release and keep the Trivy binary on the
+      # latest checked v0.71.0 release.
       - name: Set up Trivy
-        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # setup-trivy v0.2.6
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # setup-trivy v0.3.1
         with:
-          version: v0.70.0
+          version: v0.71.0
           cache: true
 
       - name: Fail on fixed critical vulnerabilities or EOL base images
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@f52b05f4acaaa234e44466e66d29050e135ea9ef # v4.36.0
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
           category: trivy-${{ matrix.arch }}
