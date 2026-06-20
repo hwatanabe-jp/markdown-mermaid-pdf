@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Resolve stable image reference
         id: image
@@ -73,11 +73,11 @@ jobs:
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
       # Pin setup-trivy to a checked release and keep the Trivy binary on the
-      # latest checked v0.71.0 release.
+      # latest checked v0.71.2 release.
       - name: Set up Trivy
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # setup-trivy v0.3.1
         with:
-          version: v0.71.0
+          version: v0.71.2
           cache: true
 
       - name: Fail on fixed critical vulnerabilities or EOL base images
