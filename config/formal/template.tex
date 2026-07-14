@@ -1,22 +1,23 @@
 % formal スタイル用 XeLaTeX テンプレート (pandoc 2.17 系)
 % デジタル庁「デジタル社会推進実践ガイドブック」等の公開文書の体裁を参考にしている。
 % スキーマと利用方法は docs/formal-mode.md を参照。
-\documentclass[11pt,a4paper]{article}
+\documentclass[10pt,a4paper]{article}
 
 \usepackage[top=32mm,bottom=28mm,left=28mm,right=28mm]{geometry}
 
 % ===== フォント: 本文は明朝、見出しはゴシック =====
 \usepackage{fontspec}
 \usepackage{xeCJK}
+% 太字は Bold ではなく Medium を使い、参照文書の控えめな太さに寄せる
 \setCJKmainfont{Noto Serif CJK JP}
-\setCJKsansfont{Noto Sans CJK JP}
+\setCJKsansfont{Noto Sans CJK JP}[BoldFont={Noto Sans CJK JP Medium}]
 \setCJKmonofont{Noto Sans CJK JP}
 \setmainfont{Noto Serif CJK JP}
-\setsansfont{Noto Sans CJK JP}
+\setsansfont{Noto Sans CJK JP}[BoldFont={Noto Sans CJK JP Medium}]
 \setmonofont{DejaVu Sans Mono}[Scale=0.85]
 
 \usepackage{setspace}
-\setstretch{1.32}
+\setstretch{1.5}
 \raggedbottom
 \setlength{\emergencystretch}{3em}
 
@@ -28,7 +29,7 @@
 % ===== 配色 =====
 \usepackage{xcolor}
 \usepackage{colortbl}
-\definecolor{formalheading}{HTML}{0070C0}
+\definecolor{formalheading}{HTML}{1F4E9C}
 \definecolor{formalchapterband}{HTML}{BDD7EE}
 \definecolor{formaltablehead}{HTML}{D9D9D9}
 \definecolor{formalurl}{HTML}{0563C1}
@@ -44,7 +45,10 @@
 
 \usepackage{longtable}
 \usepackage{array}
-\renewcommand{\arraystretch}{1.2}
+\renewcommand{\arraystretch}{1.1}
+% 表内では英単語のハイフネーションを行わない(セル内の不自然な分割を防ぐ)
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\hyphenpenalty=10000\exhyphenpenalty=10000}
 
 % 図表番号は章ごとの連番(図 2-1、表 1-1)。キャプションは上部に置く。
 \usepackage{caption}
@@ -54,13 +58,16 @@
 \renewcommand{\thetable}{\arabic{section}-\arabic{table}}
 \renewcommand{\figurename}{図}
 \renewcommand{\tablename}{表}
-\captionsetup{font=small,labelsep=space,justification=centering}
+\captionsetup{font=small,labelsep=quad,justification=centering}
 \captionsetup[figure]{position=top,aboveskip=2mm,belowskip=1mm}
 \captionsetup[table]{position=top,aboveskip=1mm,belowskip=2mm}
 
 % ===== コードブロック: 枠付き =====
 \usepackage{fancyvrb}
-\fvset{frame=single,framesep=1.2mm,fontsize=\small}
+\fvset{frame=single,framesep=1.2mm,fontsize=\small,rulecolor=\color{gray!70}}
+
+% 脚注罫線を参照文書に合わせてやや長めにする
+\renewcommand{\footnoterule}{\vspace*{2pt}\noindent\rule{0.3\linewidth}{0.4pt}\vspace*{2.6pt}}
 
 % ===== 見出し番号 =====
 \setcounter{secnumdepth}{4}
@@ -124,6 +131,7 @@
 \renewcommand*{\l@section}{\@dottedtocline{1}{0em}{1.6em}}
 \renewcommand*{\l@subsection}{\@dottedtocline{2}{1em}{2.4em}}
 \renewcommand*{\l@subsubsection}{\@dottedtocline{3}{2em}{2.2em}}
+\def\@dotsep{3.2}
 \makeatother
 
 % ===== pandoc が出力する本文用マクロ =====
@@ -147,23 +155,23 @@ $endif$
 
 % ===== 表紙 =====
 \begin{titlepage}
-\vspace*{14mm}
+\vspace*{10mm}
 \begin{flushright}
 {\sffamily\bfseries\fontsize{12.5pt}{18pt}\selectfont $if(series)$$series$\hspace{1em}$endif$$doc-number$\par}
 \end{flushright}
-\vspace{20mm}
+\vspace{16mm}
 \begin{center}
 {\sffamily\bfseries\fontsize{17pt}{30pt}\selectfont $title$\par}
 $if(subtitle)$
 \vspace{6mm}
 {\sffamily\bfseries\fontsize{15pt}{26pt}\selectfont $subtitle$\par}
 $endif$
-\vspace{16mm}
+\vspace{20mm}
 {\sffamily\bfseries\fontsize{12.5pt}{20pt}\selectfont $date-display$\par}
-\vspace{2mm}
+\vspace{3mm}
 {\sffamily\bfseries\fontsize{12.5pt}{20pt}\selectfont $organization$\par}
 \end{center}
-\vfill
+\vspace{12mm}
 $if(has-cover-box)$
 {\small\setlength{\fboxsep}{4mm}%
 \noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
@@ -184,6 +192,7 @@ $if(abstract)$
 $endif$
 }}\par}
 $endif$
+\vfill
 \end{titlepage}
 
 % ===== 改定履歴 =====
