@@ -1,4 +1,4 @@
-.PHONY: help build rebuild run clean clean-all test shell example convert info license-check
+.PHONY: help build rebuild run clean clean-all test shell example example-formal convert info license-check
 
 # Default target
 help:
@@ -7,6 +7,7 @@ help:
 	@echo "  make build          - Build Docker image"
 	@echo "  make run            - Open a shell via Docker Compose"
 	@echo "  make example        - Generate PDF from example.md"
+	@echo "  make example-formal - Generate formal-style PDF from formal-example.md"
 	@echo "  make test           - Test PDF generation"
 	@echo "  make shell          - Open bash shell in container"
 	@echo "  make clean          - Remove generated PDFs and Docker artifacts"
@@ -40,6 +41,19 @@ example:
 		markdown-mermaid-pdf:latest \
 		example.md example.pdf
 	@echo "Done! Check workspace/example.pdf"
+
+# Generate formal-style PDF from formal-example.md
+example-formal:
+	@echo "Generating formal-style PDF from formal-example.md..."
+	@if [ ! -f workspace/formal-example.md ]; then \
+		echo "Error: workspace/formal-example.md not found"; \
+		exit 1; \
+	fi
+	docker run --rm \
+		-v $$(pwd)/workspace:/workspace \
+		markdown-mermaid-pdf:latest \
+		formal-example.md formal-example.pdf --style formal
+	@echo "Done! Check workspace/formal-example.pdf"
 
 # Test PDF generation with example
 test:

@@ -1,0 +1,225 @@
+% formal スタイル用 XeLaTeX テンプレート (pandoc 2.17 系)
+% デジタル庁「デジタル社会推進実践ガイドブック」等の公開文書の体裁を参考にしている。
+% スキーマと利用方法は docs/formal-mode.md を参照。
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[top=32mm,bottom=28mm,left=28mm,right=28mm]{geometry}
+
+% ===== フォント: 本文は明朝、見出しはゴシック =====
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setCJKmainfont{Noto Serif CJK JP}
+\setCJKsansfont{Noto Sans CJK JP}
+\setCJKmonofont{Noto Sans CJK JP}
+\setmainfont{Noto Serif CJK JP}
+\setsansfont{Noto Sans CJK JP}
+\setmonofont{DejaVu Sans Mono}[Scale=0.85]
+
+\usepackage{setspace}
+\setstretch{1.32}
+\raggedbottom
+\setlength{\emergencystretch}{3em}
+
+% 段落は全角一字下げ(見出し直後の段落も含む)
+\usepackage{indentfirst}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+
+% ===== 配色 =====
+\usepackage{xcolor}
+\usepackage{colortbl}
+\definecolor{formalheading}{HTML}{0070C0}
+\definecolor{formalchapterband}{HTML}{BDD7EE}
+\definecolor{formaltablehead}{HTML}{D9D9D9}
+\definecolor{formalurl}{HTML}{0563C1}
+
+% ===== 図表 =====
+\usepackage{float}
+\usepackage{graphicx}
+\makeatletter
+\def\formalmaxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\makeatother
+% すべての \includegraphics を紙面幅以内に収める
+\setkeys{Gin}{width=\formalmaxwidth,keepaspectratio}
+
+\usepackage{longtable}
+\usepackage{array}
+\renewcommand{\arraystretch}{1.2}
+
+% 図表番号は章ごとの連番(図 2-1、表 1-1)。キャプションは上部に置く。
+\usepackage{caption}
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+\renewcommand{\thefigure}{\arabic{section}-\arabic{figure}}
+\renewcommand{\thetable}{\arabic{section}-\arabic{table}}
+\renewcommand{\figurename}{図}
+\renewcommand{\tablename}{表}
+\captionsetup{font=small,labelsep=space,justification=centering}
+\captionsetup[figure]{position=top,aboveskip=2mm,belowskip=1mm}
+\captionsetup[table]{position=top,aboveskip=1mm,belowskip=2mm}
+
+% ===== コードブロック: 枠付き =====
+\usepackage{fancyvrb}
+\fvset{frame=single,framesep=1.2mm,fontsize=\small}
+
+% ===== 見出し番号 =====
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{subsubsection})}
+\newcommand{\formalkatakana}[1]{%
+  \ifcase#1\or ア\or イ\or ウ\or エ\or オ\or カ\or キ\or ク\or ケ\or コ%
+  \or サ\or シ\or ス\or セ\or ソ\or タ\or チ\or ツ\or テ\or ト\fi}
+\renewcommand{\theparagraph}{\formalkatakana{\value{paragraph}}}
+
+% ===== 見出しの体裁 =====
+% 章: 水色帯 + 青文字(章の前で改ページ) / 節・項: 青文字ゴシック / 細目: 黒太字ゴシック
+\usepackage[explicit]{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+\newcommand{\formalchapterbox}[1]{%
+  {\setlength{\fboxsep}{5pt}%
+   \noindent\colorbox{formalchapterband}{%
+     \parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
+       \strut\textcolor{formalheading}{#1}}}}}
+\titleformat{\section}[block]
+  {\sffamily\bfseries\fontsize{14pt}{20pt}\selectfont}
+  {}{0pt}
+  {\formalchapterbox{\thesection\hspace{1em}#1}}
+\titleformat{name=\section,numberless}[block]
+  {\sffamily\bfseries\fontsize{12pt}{18pt}\selectfont\filcenter}
+  {}{0pt}
+  {#1}
+\titleformat{\subsection}[block]
+  {\sffamily\bfseries\fontsize{13pt}{19pt}\selectfont\color{formalheading}}
+  {}{0pt}
+  {\thesubsection\hspace{1em}#1}
+\titleformat{name=\subsection,numberless}[block]
+  {\sffamily\bfseries\fontsize{13pt}{19pt}\selectfont\color{formalheading}}
+  {}{0pt}
+  {#1}
+\titleformat{\subsubsection}[block]
+  {\sffamily\bfseries\fontsize{12pt}{17pt}\selectfont\color{formalheading}}
+  {}{0pt}
+  {\thesubsubsection\hspace{0.5em}#1}
+\titleformat{name=\subsubsection,numberless}[block]
+  {\sffamily\bfseries\fontsize{12pt}{17pt}\selectfont\color{formalheading}}
+  {}{0pt}
+  {#1}
+\titleformat{\paragraph}[block]
+  {\sffamily\bfseries\normalsize}
+  {}{0pt}
+  {\hspace{1em}\theparagraph\hspace{1em}#1}
+\titleformat{name=\paragraph,numberless}[block]
+  {\sffamily\bfseries\normalsize}
+  {}{0pt}
+  {\hspace{1em}#1}
+\titlespacing*{\section}{0pt}{0pt}{1.0\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.6\baselineskip}{0.7\baselineskip}
+\titlespacing*{\subsubsection}{0pt}{1.4\baselineskip}{0.6\baselineskip}
+\titlespacing*{\paragraph}{0pt}{1.0\baselineskip}{0.4\baselineskip}
+
+% ===== 目次: 全階層に点線リーダー =====
+\makeatletter
+\renewcommand*{\l@section}{\@dottedtocline{1}{0em}{1.6em}}
+\renewcommand*{\l@subsection}{\@dottedtocline{2}{1em}{2.4em}}
+\renewcommand*{\l@subsubsection}{\@dottedtocline{3}{2em}{2.2em}}
+\makeatother
+
+% ===== pandoc が出力する本文用マクロ =====
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\st}[1]{#1}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% ===== ハイパーリンク =====
+\usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,filecolor=black,urlcolor=formalurl,bookmarksnumbered=true]{hyperref}
+\hypersetup{
+  pdftitle={$title$},
+  pdfauthor={$organization$},
+  pdfcreator={markdown-mermaid-pdf (formal style)}}
+% アンカー名には ")" やカタカナを含めない
+\renewcommand{\theHsubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+\renewcommand{\theHparagraph}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}.\arabic{paragraph}}
+
+\begin{document}
+
+% ===== 表紙 =====
+\begin{titlepage}
+\vspace*{14mm}
+\begin{flushright}
+{\sffamily\bfseries\fontsize{12.5pt}{18pt}\selectfont $if(series)$$series$\hspace{1em}$endif$$doc-number$\par}
+\end{flushright}
+\vspace{20mm}
+\begin{center}
+{\sffamily\bfseries\fontsize{17pt}{30pt}\selectfont $title$\par}
+$if(subtitle)$
+\vspace{6mm}
+{\sffamily\bfseries\fontsize{15pt}{26pt}\selectfont $subtitle$\par}
+$endif$
+\vspace{16mm}
+{\sffamily\bfseries\fontsize{12.5pt}{20pt}\selectfont $date-display$\par}
+\vspace{2mm}
+{\sffamily\bfseries\fontsize{12.5pt}{20pt}\selectfont $organization$\par}
+\end{center}
+\vfill
+$if(has-cover-box)$
+{\small\setlength{\fboxsep}{4mm}%
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+\setlength{\parindent}{0pt}\setstretch{1.2}%
+$if(position)$
+〔ドキュメントの位置付け〕\par
+{\leftskip=1em $position$\par}
+$endif$
+$if(keywords-display)$
+$if(position)$\vspace{0.9\baselineskip}$endif$
+〔キーワード〕\par
+{\leftskip=1em $keywords-display$\par}
+$endif$
+$if(abstract)$
+\vspace{0.9\baselineskip}
+〔概要〕\par
+{\setlength{\parindent}{1em}$abstract$\par}
+$endif$
+}}\par}
+$endif$
+\end{titlepage}
+
+% ===== 改定履歴 =====
+\thispagestyle{empty}
+{\sffamily\bfseries\fontsize{12pt}{18pt}\selectfont 改定履歴\par}
+\vspace{0.8\baselineskip}
+\noindent
+\begin{longtable}{|p{30mm}|p{22mm}|p{\dimexpr\linewidth-52mm-6\tabcolsep-4\arrayrulewidth\relax}|}
+\hline
+\multicolumn{1}{|c|}{\sffamily 改定年月日} &
+\multicolumn{1}{c|}{\sffamily 改定箇所} &
+\multicolumn{1}{c|}{\sffamily 改定内容} \\
+\hline
+\endfirsthead
+\hline
+\endhead
+$for(revision-history)$
+$it.date-display$ & $it.place$ & $it.description$ \\
+\hline
+$endfor$
+\end{longtable}
+
+\clearpage
+
+% ===== 目次 =====
+\pagenumbering{arabic}
+{\sffamily\bfseries\fontsize{13pt}{19pt}\selectfont 目次\par}
+\vspace{0.3\baselineskip}
+\begingroup
+\setstretch{1.3}
+\makeatletter
+\@starttoc{toc}
+\makeatother
+\endgroup
+
+% ===== 本文 =====
+$body$
+
+\end{document}
