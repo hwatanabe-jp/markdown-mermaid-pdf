@@ -12,6 +12,9 @@ This repository builds and publishes a Docker image that converts Markdown to PD
 - XeLaTeX
 - Mermaid rendering through `mermaid-filter`
 - Chromium/Puppeteer for Mermaid diagrams
+- An optional `--style formal` mode (`config/formal/`) that renders Digital-Agency-style
+  formal documents from schema-conforming Markdown; the schema is documented in
+  `docs/formal-mode.md` and exercised by `workspace/formal-example.md` and the smoke test
 
 ## Project Posture
 

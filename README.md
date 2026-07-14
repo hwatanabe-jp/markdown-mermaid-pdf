@@ -6,8 +6,9 @@ Pandoc と XeLaTeX を用いた Markdown→PDF 変換環境を提供する Docke
 
 - Markdown から PDF への変換（Pandoc + XeLaTeX）
 - Mermaid 図表のサポート（mermaid-filter + Puppeteer + Chromium）
-- 日本語フォント対応（Noto Sans CJK JP）
+- 日本語フォント対応（Noto Sans CJK JP / Noto Serif CJK JP）
 - カスタマイズ可能な PDF 設定
+- デジタル庁標準ガイドライン風のお硬い文書を生成する formal スタイル（`--style formal`）
 
 ## 必要な環境
 
@@ -91,6 +92,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make rebuild`              | キャッシュなしで再ビルド              |
 | `make run`                  | Docker Compose 経由でシェルを起動     |
 | `make example`              | example.md から PDF を生成            |
+| `make example-formal`       | formal-example.md からお硬い PDF を生成 |
 | `make test`                 | PDF が正常に生成されるかテスト        |
 | `make convert INPUT=<file>` | 指定したファイルを変換                |
 | `make shell`                | コンテナ内で bash シェルを起動        |
@@ -99,6 +101,25 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make info`                 | Docker イメージとツールバージョン表示 |
 | `make license-check`        | ライセンスコンプライアンスを検証      |
 | `make help`                 | ヘルプメッセージを表示                |
+
+## お硬い文書モード（formal スタイル）
+
+`--style formal` を付けると、デジタル庁の標準ガイドライン群風の体裁を持つ PDF を生成できます。
+表紙（文書番号・和暦併記の日付・概要の枠囲み）、改定履歴、点線リーダー付き目次、
+水色帯の章見出し、章別の図表番号（図 2-1／表 1-1）などが自動で組み上がります。
+
+```bash
+docker run --rm \
+  -v $(pwd)/workspace:/workspace \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest \
+  document.md output.pdf --style formal
+```
+
+文書は formal スキーマ（必須フロントマターと見出し規則）に適合している必要があり、
+適合しない場合は違反内容を列挙したエラーとともに変換が中止されます。
+
+- スキーマの正典と記入例: [docs/formal-mode.md](docs/formal-mode.md)
+- サンプル文書: `workspace/formal-example.md`（`make example-formal` で変換）
 
 ## Mermaid 図表の使用例
 
