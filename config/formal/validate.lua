@@ -140,11 +140,19 @@ local function validate_and_decorate_meta(meta)
 
   -- position は「Informative」「参考とするドキュメント」のように行を積む表記のため、
   -- 段落内の改行(SoftBreak)を強制改行に変換する。
-  if meta["position"] ~= nil and meta_type(meta["position"]) == "Blocks" then
-    meta["position"] = pandoc.walk_block(
-      pandoc.Div(meta["position"]),
-      { SoftBreak = function() return pandoc.LineBreak() end }
-    ).content
+  -- title / subtitle も複数行(YAML literal block)で書けば表紙の折返し位置を制御できる。
+  for _, key in ipairs({ "position", "title", "subtitle" }) do
+    if meta[key] ~= nil and meta_type(meta[key]) == "Blocks" then
+      meta[key] = pandoc.walk_block(
+        pandoc.Div(meta[key]),
+        { SoftBreak = function() return pandoc.LineBreak() end }
+      ).content
+    end
+  end
+
+  -- PDF メタデータ(pdftitle)用に改行を含まない題名を別途持つ。
+  if meta["title"] ~= nil then
+    meta["title-plain"] = pandoc.MetaString(stringify(meta["title"]))
   end
 
   if is_present(meta["position"]) or is_present(meta["keywords-display"])

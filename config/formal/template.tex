@@ -17,7 +17,7 @@
 \setmonofont{DejaVu Sans Mono}[Scale=0.85]
 
 \usepackage{setspace}
-\setstretch{1.5}
+\setstretch{1.45}
 \raggedbottom
 \setlength{\emergencystretch}{3em}
 
@@ -29,7 +29,7 @@
 % ===== 配色 =====
 \usepackage{xcolor}
 \usepackage{colortbl}
-\definecolor{formalheading}{HTML}{1F4E9C}
+\definecolor{formalheading}{HTML}{1E5AA6}
 \definecolor{formalchapterband}{HTML}{BDD7EE}
 \definecolor{formaltablehead}{HTML}{D9D9D9}
 \definecolor{formalurl}{HTML}{0563C1}
@@ -64,10 +64,10 @@
 
 % ===== コードブロック: 枠付き =====
 \usepackage{fancyvrb}
-\fvset{frame=single,framesep=1.2mm,fontsize=\small,rulecolor=\color{gray!70}}
+\fvset{framesep=1mm,fontsize=\small}
 
 % 脚注罫線を参照文書に合わせてやや長めにする
-\renewcommand{\footnoterule}{\vspace*{2pt}\noindent\rule{0.3\linewidth}{0.4pt}\vspace*{2.6pt}}
+\renewcommand{\footnoterule}{\vspace*{2pt}\noindent\rule{0.4\linewidth}{0.4pt}\vspace*{2.6pt}}
 
 % ===== 見出し番号 =====
 \setcounter{secnumdepth}{4}
@@ -84,11 +84,16 @@
 % 章: 水色帯 + 青文字(章の前で改ページ) / 節・項: 青文字ゴシック / 細目: 黒太字ゴシック
 \usepackage[explicit]{titlesec}
 \newcommand{\sectionbreak}{\clearpage}
+% 水色帯 + 帯下端の濃青細線(DS-222 の章見出し)。
+% vbox + offinterlineskip で帯と細線を密着させる。
 \newcommand{\formalchapterbox}[1]{%
-  {\setlength{\fboxsep}{5pt}%
-   \noindent\colorbox{formalchapterband}{%
-     \parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
-       \strut\textcolor{formalheading}{#1}}}}}
+  \noindent\vbox{\offinterlineskip
+    {\setlength{\fboxsep}{4pt}%
+     \hbox{\colorbox{formalchapterband}{%
+       \parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
+         \strut\textcolor{formalheading}{#1}}}}}%
+    \kern1.2pt
+    \hbox{\textcolor{formalheading}{\rule{\linewidth}{0.8pt}}}}}
 \titleformat{\section}[block]
   {\sffamily\bfseries\fontsize{14pt}{20pt}\selectfont}
   {}{0pt}
@@ -139,12 +144,18 @@
 \providecommand{\st}[1]{#1}
 $if(highlighting-macros)$
 $highlighting-macros$
+% コードブロックは枠線ではなく薄灰色の地で本文に馴染ませる
+\usepackage{framed}
+\definecolor{shadecolor}{HTML}{F2F2F2}
+\ifcsdef{Shaded}
+  {\renewenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}}
+  {\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}}
 $endif$
 
 % ===== ハイパーリンク =====
 \usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,filecolor=black,urlcolor=formalurl,bookmarksnumbered=true]{hyperref}
 \hypersetup{
-  pdftitle={$title$},
+  pdftitle={$if(title-plain)$$title-plain$$else$$title$$endif$},
   pdfauthor={$organization$},
   pdfcreator={markdown-mermaid-pdf (formal style)}}
 % アンカー名には ")" やカタカナを含めない

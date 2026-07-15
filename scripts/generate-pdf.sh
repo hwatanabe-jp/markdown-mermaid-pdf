@@ -73,6 +73,12 @@ fi
 
 echo "Generating PDF: ${INPUT_MD} -> ${OUTPUT_PDF} (style: ${STYLE})"
 
+# formal スタイルでは、利用者が独自の設定を置いていない限り
+# コントラストの高いニュートラル配色の Mermaid テーマを使う。
+if [ "${STYLE}" = "formal" ] && [ ! -f .mermaid-config.json ]; then
+  cp /config/formal/mermaid-config.json .mermaid-config.json
+fi
+
 for config_file in .mermaid-config.json .puppeteer.json .mermaid.css; do
   if [ ! -f "${config_file}" ]; then
     cp "/config/${config_file}" "${config_file}"
