@@ -22,7 +22,7 @@ if [ -n "${DOCKER_PLATFORM}" ]; then
   docker_run_args+=(--platform "${DOCKER_PLATFORM}")
 fi
 
-for required_file in example.md; do
+for required_file in example.md formal-example.md; do
   if [ ! -f "${WORKSPACE_DIR}/${required_file}" ]; then
     echo "Error: required fixture '${WORKSPACE_DIR}/${required_file}' not found"
     exit 1
@@ -32,12 +32,18 @@ done
 EXAMPLE_OUTPUT="smoke-test-${$}.pdf"
 PAGEBREAK_INPUT="pagebreak-test-${$}.md"
 PAGEBREAK_OUTPUT="pagebreak-test-${$}.pdf"
+FORMAL_OUTPUT="formal-test-${$}.pdf"
+FORMAL_INVALID_INPUT="formal-invalid-${$}.md"
+FORMAL_INVALID_OUTPUT="formal-invalid-${$}.pdf"
 
 cleanup() {
   rm -f \
     "${WORKSPACE_DIR}/${EXAMPLE_OUTPUT}" \
     "${WORKSPACE_DIR}/${PAGEBREAK_INPUT}" \
-    "${WORKSPACE_DIR}/${PAGEBREAK_OUTPUT}"
+    "${WORKSPACE_DIR}/${PAGEBREAK_OUTPUT}" \
+    "${WORKSPACE_DIR}/${FORMAL_OUTPUT}" \
+    "${WORKSPACE_DIR}/${FORMAL_INVALID_INPUT}" \
+    "${WORKSPACE_DIR}/${FORMAL_INVALID_OUTPUT}"
 }
 
 trap cleanup EXIT
@@ -80,6 +86,51 @@ fi
 
 if [ "${PAGE_COUNT}" != "2" ]; then
   echo "Error: expected 2 pages, got ${PAGE_COUNT}"
+  exit 1
+fi
+
+echo "Running formal style test against ${IMAGE_REF}"
+docker run "${docker_run_args[@]}" \
+  -v "${WORKSPACE_DIR}:/workspace" \
+  "${IMAGE_REF}" \
+  formal-example.md "${FORMAL_OUTPUT}" --style formal
+
+test -f "${WORKSPACE_DIR}/${FORMAL_OUTPUT}"
+
+FORMAL_PAGE_COUNT="$(
+  docker run "${docker_run_args[@]}" \
+    -v "${WORKSPACE_DIR}:/workspace" \
+    --entrypoint pdfinfo \
+    "${IMAGE_REF}" \
+    "${FORMAL_OUTPUT}" 2>/dev/null | awk '/Pages/ {print $2}'
+)"
+
+if [ -z "${FORMAL_PAGE_COUNT}" ] || [ "${FORMAL_PAGE_COUNT}" -lt 6 ]; then
+  echo "Error: expected at least 6 pages (cover, revision history, toc, chapters), got '${FORMAL_PAGE_COUNT}'"
+  exit 1
+fi
+
+cat > "${WORKSPACE_DIR}/${FORMAL_INVALID_INPUT}" <<'EOF'
+---
+title: 必須メタデータが欠落した文書
+---
+
+# はじめに
+
+doc-number などが無いため formal スタイルでは変換できないはず。
+EOF
+
+echo "Running formal validation-failure test against ${IMAGE_REF} (error output below is expected)"
+if docker run "${docker_run_args[@]}" \
+  -v "${WORKSPACE_DIR}:/workspace" \
+  "${IMAGE_REF}" \
+  "${FORMAL_INVALID_INPUT}" "${FORMAL_INVALID_OUTPUT}" --style formal; then
+  echo "Error: formal conversion of an invalid document should fail"
+  exit 1
+fi
+
+if [ -f "${WORKSPACE_DIR}/${FORMAL_INVALID_OUTPUT}" ]; then
+  echo "Error: invalid formal document must not produce an output PDF"
   exit 1
 fi
 

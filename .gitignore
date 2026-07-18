@@ -1,3 +1,5 @@
 workspace/*
 !workspace/example.md
+!workspace/formal-example.md
 .codex
+/*.pdf
