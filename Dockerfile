@@ -21,6 +21,9 @@ ENV PATH=${MERMAID_TOOLS_DIR}/node_modules/.bin:${PATH}
 
 ARG NODE_MAJOR=24
 
+# Fail RUN pipelines on any stage failure (e.g. a truncated curl feeding gpg).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # Install Node.js from the explicit NodeSource apt repository, along with all
 # runtime packages needed for PDF generation.
 RUN apt-get update \
@@ -84,6 +87,7 @@ RUN echo "=== Version Information ===" \
     && xelatex --version | head -n 1 \
     && npm list --prefix ${MERMAID_TOOLS_DIR} --depth=0 2>/dev/null \
     && echo "mermaid-filter: $(which mermaid-filter)" \
-    && fc-list | grep -i "noto sans cjk jp" | head -n 1
+    && fc-list | grep -i "noto sans cjk jp" | head -n 1 \
+    && rm -rf /root/.npm
 
 ENTRYPOINT ["/usr/local/bin/generate-pdf.sh"]

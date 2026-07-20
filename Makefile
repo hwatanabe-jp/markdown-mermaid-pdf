@@ -1,8 +1,12 @@
-.PHONY: help build rebuild run clean clean-all test shell example example-formal convert info license-check
+.PHONY: help build rebuild run clean clean-all test shell example example-formal convert info license-check lint lint-dockerfile lint-image
 
 IMAGE ?= markdown-mermaid-pdf:latest
 RUN_WORKSPACE = docker run --rm -v $$(pwd)/workspace:/workspace $(IMAGE)
 RUN_BASH = docker run --rm --entrypoint /bin/bash $(IMAGE) -lc
+
+# Lint tool pins (single source of truth; CI calls these targets too).
+HADOLINT_IMAGE := hadolint/hadolint:v2.14.0@sha256:27086352fd5e1907ea2b934eb1023f217c5ae087992eb59fde121dce9c9ff21e
+DOCKLE_IMAGE := goodwithtech/dockle:v0.4.15@sha256:eade932f793742de0aa8755406c7677cd7696f8675b6180926f7eeffa7abe6b9
 
 # Default target
 help:
@@ -16,6 +20,7 @@ help:
 	@echo "  make shell          - Open bash shell in container"
 	@echo "  make clean          - Remove generated PDFs and Docker artifacts"
 	@echo "  make rebuild        - Clean build (no cache)"
+	@echo "  make lint           - Lint Dockerfile (Hadolint) and built image (Dockle)"
 	@echo "  make info           - Show Docker image and tool versions"
 	@echo "  make license-check  - Verify license compliance"
 	@echo ""
@@ -57,6 +62,27 @@ example-formal:
 test:
 	@echo "Testing PDF generation..."
 	@./scripts/smoke-test-image.sh $(IMAGE)
+
+# Lint Dockerfile and built image (same commands CI runs)
+lint: lint-dockerfile lint-image
+
+# Static Dockerfile lint; picks up .hadolint.yaml from the repo root.
+# HADOLINT_ARGS is a hook for CI (e.g. HADOLINT_ARGS="-f sarif").
+lint-dockerfile:
+	@docker run --rm -v $$(pwd):/wd:ro -w /wd $(HADOLINT_IMAGE) \
+		hadolint $(HADOLINT_ARGS) Dockerfile
+
+# Image lint against $(IMAGE). Accepted checks (documented in TROUBLESHOOTING.md):
+#   CIS-DI-0001  root がデフォルトなのは bind-mount 出力の所有権を考慮した仕様
+#   DKL-DI-0006  latest タグは「安定版のみ」のタグポリシーとして README に明記済み
+#   -ae mdf      texlive の mdframed パッケージ (*.mdf) を資格情報ファイルと誤検知するため
+lint-image:
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $(DOCKLE_IMAGE) \
+		--exit-code 1 --exit-level warn \
+		-i CIS-DI-0001 \
+		-i DKL-DI-0006 \
+		-ae mdf \
+		$(IMAGE)
 
 # Open bash shell in container
 shell:

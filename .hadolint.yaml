@@ -1,0 +1,6 @@
+# Hadolint configuration. Run locally with `make lint-dockerfile`.
+ignored:
+  # apt パッケージはバージョンをピンしない方針:
+  # Debian stable のポイントリリースで厳密ピンは壊れやすく、
+  # CVE 追跡は週次の Trivy スキャン (security-scan.yml) が担う。
+  - DL3008
