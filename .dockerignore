@@ -9,8 +9,10 @@ docker-compose.yml
 .dockerignore
 
 # Documentation
-README.md
 *.md
+
+# Reference PDFs kept at repo root
+*.pdf
 
 # IDE
 .vscode

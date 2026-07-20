@@ -1,39 +1,25 @@
 -- Convert HTML comment `<!-- pagebreak -->` into format-specific page breaks.
--- For LaTeX/PDF we emit \newpage, for HTML we emit a styled div, and fall back
--- to \newpage for other formats.
+-- For HTML we emit a styled div; LaTeX/PDF and all other formats get \newpage.
 
 local pattern = "^%s*<!%-%-%s*pagebreak%s*%-%->%s*$"
 
-local function make_break_block()
-  if FORMAT:match("latex") then
-    return pandoc.RawBlock("latex", "\\newpage")
-  elseif FORMAT:match("html") then
-    return pandoc.RawBlock("html", '<div style="page-break-after: always;"></div>')
-  else
-    return pandoc.RawBlock("latex", "\\newpage")
+local function break_raw()
+  if FORMAT:match("html") then
+    return "html", '<div style="page-break-after: always;"></div>'
   end
-end
-
-local function make_break_inline()
-  if FORMAT:match("latex") then
-    return pandoc.RawInline("latex", "\\newpage")
-  elseif FORMAT:match("html") then
-    return pandoc.RawInline("html", '<div style="page-break-after: always;"></div>')
-  else
-    return pandoc.RawInline("latex", "\\newpage")
-  end
+  return "latex", "\\newpage"
 end
 
 function RawBlock(el)
   if el.format == "html" and el.text:match(pattern) then
-    return make_break_block()
+    return pandoc.RawBlock(break_raw())
   end
   return nil
 end
 
 function RawInline(el)
   if el.format == "html" and el.text:match(pattern) then
-    return make_break_inline()
+    return pandoc.RawInline(break_raw())
   end
   return nil
 end

@@ -101,21 +101,21 @@ function Table(tbl)
     body_rows = { "\\multicolumn{" .. #tbl.colspecs .. "}{|l|}{} \\\\" }
   end
 
+  local function append_header(lines)
+    table.insert(lines, "\\hline")
+    for _, r in ipairs(header_rows) do
+      table.insert(lines, r)
+      table.insert(lines, "\\hline")
+    end
+  end
+
   local lines = { "\\begin{longtable}{" .. column_spec(tbl.colspecs) .. "}" }
   if caption_latex then
     table.insert(lines, "\\caption{" .. caption_latex .. "}\\\\")
   end
-  table.insert(lines, "\\hline")
-  for _, r in ipairs(header_rows) do
-    table.insert(lines, r)
-    table.insert(lines, "\\hline")
-  end
+  append_header(lines)
   table.insert(lines, "\\endfirsthead")
-  table.insert(lines, "\\hline")
-  for _, r in ipairs(header_rows) do
-    table.insert(lines, r)
-    table.insert(lines, "\\hline")
-  end
+  append_header(lines)
   table.insert(lines, "\\endhead")
   for _, r in ipairs(body_rows) do
     table.insert(lines, r)

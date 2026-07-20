@@ -1,21 +1,14 @@
 services:
-  markdown-mermaid-pdf:
+  markdown-mermaid-pdf: &base
     build:
       context: .
-      dockerfile: Dockerfile
     image: markdown-mermaid-pdf:latest
     volumes:
       - ./workspace:/workspace
     working_dir: /workspace
 
   markdown-mermaid-pdf-shell:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: markdown-mermaid-pdf:latest
-    volumes:
-      - ./workspace:/workspace
+    <<: *base
     entrypoint: /bin/bash
     stdin_open: true
     tty: true
-    working_dir: /workspace

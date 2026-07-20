@@ -20,21 +20,20 @@ case "${MODE}" in
     ;;
 esac
 
+output_file="$(mktemp)"
+trap 'rm -f "${output_file}"' EXIT
+
 attempt=1
 while true; do
-  output_file="$(mktemp)"
-
   if docker buildx imagetools inspect "${IMAGE_REF}" >"${output_file}" 2>&1; then
     if [ "${MODE}" = "inspect" ]; then
       cat "${output_file}"
-      rm -f "${output_file}"
       exit 0
     fi
 
     digest="$(awk '/^Digest:/ {print $2; exit}' "${output_file}")"
     if [ -n "${digest}" ]; then
       printf '%s\n' "${digest}"
-      rm -f "${output_file}"
       exit 0
     fi
 
@@ -43,8 +42,6 @@ while true; do
   else
     cat "${output_file}" >&2
   fi
-
-  rm -f "${output_file}"
 
   if [ "${attempt}" -ge "${MAX_ATTEMPTS}" ]; then
     echo "Failed to inspect ${IMAGE_REF} after ${MAX_ATTEMPTS} attempts" >&2

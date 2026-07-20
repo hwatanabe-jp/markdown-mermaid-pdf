@@ -1,5 +1,9 @@
 .PHONY: help build rebuild run clean clean-all test shell example example-formal convert info license-check
 
+IMAGE ?= markdown-mermaid-pdf:latest
+RUN_WORKSPACE = docker run --rm -v $$(pwd)/workspace:/workspace $(IMAGE)
+RUN_BASH = docker run --rm --entrypoint /bin/bash $(IMAGE) -lc
+
 # Default target
 help:
 	@echo "Markdown Mermaid PDF - Available commands:"
@@ -19,12 +23,12 @@ help:
 # Build Docker image
 build:
 	@echo "Building Docker image..."
-	docker build -t markdown-mermaid-pdf:latest .
+	docker build -t $(IMAGE) .
 
 # Rebuild without cache
 rebuild:
 	@echo "Rebuilding Docker image (no cache)..."
-	docker build --no-cache -t markdown-mermaid-pdf:latest .
+	docker build --no-cache -t $(IMAGE) .
 
 # Run container interactively
 run: shell
@@ -36,10 +40,7 @@ example:
 		echo "Error: workspace/example.md not found"; \
 		exit 1; \
 	fi
-	docker run --rm \
-		-v $$(pwd)/workspace:/workspace \
-		markdown-mermaid-pdf:latest \
-		example.md example.pdf
+	$(RUN_WORKSPACE) example.md example.pdf
 	@echo "Done! Check workspace/example.pdf"
 
 # Generate formal-style PDF from formal-example.md
@@ -49,16 +50,13 @@ example-formal:
 		echo "Error: workspace/formal-example.md not found"; \
 		exit 1; \
 	fi
-	docker run --rm \
-		-v $$(pwd)/workspace:/workspace \
-		markdown-mermaid-pdf:latest \
-		formal-example.md formal-example.pdf --style formal
+	$(RUN_WORKSPACE) formal-example.md formal-example.pdf --style formal
 	@echo "Done! Check workspace/formal-example.pdf"
 
 # Test PDF generation with example
 test:
 	@echo "Testing PDF generation..."
-	@./scripts/smoke-test-image.sh markdown-mermaid-pdf:latest
+	@./scripts/smoke-test-image.sh $(IMAGE)
 
 # Open bash shell in container
 shell:
@@ -70,19 +68,18 @@ clean:
 	@echo "Cleaning up..."
 	rm -f workspace/*.pdf
 	rm -f workspace/*.log
-	@if command -v docker compose >/dev/null 2>&1; then \
-		docker compose down -v 2>/dev/null || true; \
-	fi
+	@docker compose down -v 2>/dev/null || true
 	@echo "Cleanup complete"
 
 # Clean everything including Docker images
 clean-all: clean
 	@echo "Removing Docker images..."
-	docker rmi markdown-mermaid-pdf:latest || true
+	docker rmi $(IMAGE) || true
 	@echo "Complete cleanup done"
 
 # Generate PDF from specific file
-# Usage: make convert INPUT=document.md OUTPUT=output.pdf
+# Usage: make convert INPUT=document.md [OUTPUT=output.pdf]
+# OUTPUT を省略した場合はコンテナ側 (generate-pdf.sh) が入力名から導出する。
 convert:
 	@if [ -z "$(INPUT)" ]; then \
 		echo "Error: INPUT variable is required"; \
@@ -93,21 +90,16 @@ convert:
 		echo "Error: workspace/$(INPUT) not found"; \
 		exit 1; \
 	fi
-	@OUTPUT=$${OUTPUT:-$$(basename $(INPUT) .md).pdf}; \
-	echo "Converting $(INPUT) to $$OUTPUT..."; \
-	docker run --rm \
-		-v $$(pwd)/workspace:/workspace \
-		markdown-mermaid-pdf:latest \
-		$(INPUT) $$OUTPUT
+	$(RUN_WORKSPACE) $(INPUT) $(OUTPUT)
 	@echo "Done!"
 
 # Show Docker image info
 info:
 	@echo "Docker image information:"
-	@docker images markdown-mermaid-pdf:latest
+	@docker images $(IMAGE)
 	@echo ""
 	@echo "Installed tools versions:"
-	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "\
+	@$(RUN_BASH) "\
 		echo 'Node.js:' && node --version && \
 		echo 'npm:' && npm --version && \
 		echo 'Pandoc:' && pandoc --version | head -n 1 && \
@@ -119,33 +111,25 @@ info:
 license-check:
 	@echo "Checking license compliance..."
 	@echo ""
-	@echo "1. Verifying LICENSE file exists:"
-	@if [ -f LICENSE ]; then \
-		echo "   ✓ LICENSE file found"; \
-	else \
-		echo "   ✗ LICENSE file missing"; \
-		exit 1; \
-	fi
+	@echo "1. Verifying required license files:"
+	@for f in LICENSE THIRD_PARTY_NOTICES.md; do \
+		if [ -f $$f ]; then \
+			echo "   ✓ $$f found"; \
+		else \
+			echo "   ✗ $$f missing"; \
+			exit 1; \
+		fi; \
+	done
 	@echo ""
-	@echo "2. Verifying THIRD_PARTY_NOTICES.md exists:"
-	@if [ -f THIRD_PARTY_NOTICES.md ]; then \
-		echo "   ✓ THIRD_PARTY_NOTICES.md found"; \
-	else \
-		echo "   ✗ THIRD_PARTY_NOTICES.md missing"; \
-		exit 1; \
-	fi
-	@echo ""
-	@echo "3. Checking Docker image labels:"
-	@docker inspect markdown-mermaid-pdf:latest --format='{{.Config.Labels}}' 2>/dev/null | grep -q "org.opencontainers.image.licenses" && \
+	@echo "2. Checking Docker image labels:"
+	@docker inspect $(IMAGE) --format='{{.Config.Labels}}' 2>/dev/null | grep -q "org.opencontainers.image.licenses" && \
 		echo "   ✓ License label found in image" || \
 		echo "   ⚠ License label not found (image may need rebuilding)"
 	@echo ""
-	@echo "4. Auditing Mermaid npm packages in image:"
-	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null" || echo "   (npm packages listed above)"
-	@echo ""
-	@echo "5. Checking Debian package licenses:"
-	@echo "   (Sample check for key packages)"
-	@docker run --rm --entrypoint /bin/bash markdown-mermaid-pdf:latest -lc "dpkg -l | grep -E 'pandoc|chromium|texlive-xetex|fonts-noto-cjk' | head -n 5"
+	@echo "3. Auditing Mermaid npm packages and key Debian packages in image:"
+	@$(RUN_BASH) "npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null || true; \
+		echo ''; \
+		dpkg -l | grep -E 'pandoc|chromium|texlive-xetex|fonts-noto-cjk' | head -n 5"
 	@echo ""
 	@echo "✓ License compliance check complete"
 	@echo ""

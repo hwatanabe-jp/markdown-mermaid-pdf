@@ -13,9 +13,7 @@ local function add_error(msg)
   table.insert(errors, msg)
 end
 
-local function meta_type(v)
-  return pandoc.utils.type(v)
-end
+local meta_type = pandoc.utils.type
 
 local function is_present(v)
   return v ~= nil and stringify(v) ~= ""
@@ -47,18 +45,18 @@ local function era_name(y, m)
   return nil
 end
 
+-- 改定履歴用: 「2026年7月15日」
+local function format_plain_date(y, m, d)
+  return string.format("%d年%d月%d日", y, m, d)
+end
+
 -- 表紙用: 「2026（令和8）年7月15日」
 local function format_cover_date(y, m, d)
   local era = era_name(y, m)
   if era then
     return string.format("%d（%s）年%d月%d日", y, era, m, d)
   end
-  return string.format("%d年%d月%d日", y, m, d)
-end
-
--- 改定履歴用: 「2026年7月15日」
-local function format_plain_date(y, m, d)
-  return string.format("%d年%d月%d日", y, m, d)
+  return format_plain_date(y, m, d)
 end
 
 local function heading_label(header)
@@ -87,7 +85,7 @@ local function validate_and_decorate_meta(meta)
   end
 
   local history = meta["revision-history"]
-  if history ~= nil and stringify(history) ~= "" then
+  if is_present(history) then
     if meta_type(history) ~= "List" then
       add_error("'revision-history' は配列で指定してください")
     else
@@ -114,10 +112,8 @@ local function validate_and_decorate_meta(meta)
           if not is_present(item.place) then
             item.place = pandoc.MetaString("-")
           end
-          history[i] = item
         end
       end
-      meta["revision-history"] = history
     end
   end
 
@@ -125,11 +121,7 @@ local function validate_and_decorate_meta(meta)
   if keywords ~= nil then
     local display
     if meta_type(keywords) == "List" then
-      local parts = {}
-      for _, k in ipairs(keywords) do
-        table.insert(parts, stringify(k))
-      end
-      display = table.concat(parts, "、")
+      display = table.concat(keywords:map(stringify), "、")
     else
       display = stringify(keywords)
     end
@@ -148,11 +140,6 @@ local function validate_and_decorate_meta(meta)
         { SoftBreak = function() return pandoc.LineBreak() end }
       ).content
     end
-  end
-
-  -- PDF メタデータ(pdftitle)用に改行を含まない題名を別途持つ。
-  if meta["title"] ~= nil then
-    meta["title-plain"] = pandoc.MetaString(stringify(meta["title"]))
   end
 
   if is_present(meta["position"]) or is_present(meta["keywords-display"])
@@ -175,12 +162,12 @@ local function validate_headings(blocks)
         add_error(heading_label(block) .. " : 見出しは4階層(####)までです")
       elseif not seen_heading and block.level > 1 then
         add_error(heading_label(block) .. " : 最初の見出しは章(#)にしてください")
-        prev_level = block.level
       elseif block.level > prev_level + 1 then
         add_error(string.format(
           "%s : 直前の見出し(%d階層目)から階層が飛んでいます", heading_label(block), prev_level))
-        prev_level = block.level
-      else
+      end
+      -- 5階層以上はエラー済みのため、以降の飛び越え判定の基準にしない
+      if block.level <= 4 then
         prev_level = block.level
       end
       seen_heading = true
