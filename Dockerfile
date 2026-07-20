@@ -15,12 +15,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
 # Tell Puppeteer where to find the system Chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-# Puppeteer needs these flags when running Chromium as root in Docker
-ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"
+# Chromium sandbox flags for root execution are supplied via config/.puppeteer.json
 ENV MERMAID_TOOLS_DIR=/opt/mermaid-tools
-ENV PATH=/opt/mermaid-tools/node_modules/.bin:${PATH}
+ENV PATH=${MERMAID_TOOLS_DIR}/node_modules/.bin:${PATH}
 
 ARG NODE_MAJOR=24
+
+# Fail RUN pipelines on any stage failure (e.g. a truncated curl feeding gpg).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Node.js from the explicit NodeSource apt repository, along with all
 # runtime packages needed for PDF generation.
@@ -56,15 +58,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && npm cache clean --force
 
-# Setup Chromium sandbox for Puppeteer if available
-RUN if [ -f /usr/lib/chromium/chrome-sandbox ]; then \
-        cp /usr/lib/chromium/chrome-sandbox /usr/local/sbin/chrome-devel-sandbox \
-        && chown root:root /usr/local/sbin/chrome-devel-sandbox \
-        && chmod 4755 /usr/local/sbin/chrome-devel-sandbox; \
-    else \
-        echo "Chromium sandbox not found at /usr/lib/chromium/chrome-sandbox - skipping"; \
-    fi
-
 # Install pinned Mermaid tooling from the repository-managed lockfile.
 WORKDIR ${MERMAID_TOOLS_DIR}
 COPY container/npm/package.json container/npm/package-lock.json ./
@@ -75,10 +68,8 @@ RUN npm ci --omit=dev --ignore-scripts \
     && rm -rf /root/.npm
 
 # Set environment variables for Puppeteer
-ENV CHROME_DEVEL_SANDBOX=/usr/local/sbin/chrome-devel-sandbox
 ENV PUPPETEER_DISABLE_HEADLESS_WARNING=true
 
-WORKDIR /config
 COPY config/ /config/
 
 # Set working directory for PDF generation
@@ -94,8 +85,9 @@ RUN echo "=== Version Information ===" \
     && chromium --version \
     && pandoc --version | head -n 1 \
     && xelatex --version | head -n 1 \
-    && npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null \
+    && npm list --prefix ${MERMAID_TOOLS_DIR} --depth=0 2>/dev/null \
     && echo "mermaid-filter: $(which mermaid-filter)" \
-    && fc-list | grep -i "noto sans cjk jp" | head -n 1
+    && fc-list | grep -i "noto sans cjk jp" | head -n 1 \
+    && rm -rf /root/.npm
 
 ENTRYPOINT ["/usr/local/bin/generate-pdf.sh"]

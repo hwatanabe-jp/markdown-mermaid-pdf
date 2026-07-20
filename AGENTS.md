@@ -35,6 +35,8 @@ Keep the workflow minimal, calm, and professional:
 - Local Docker checks remain optional for feature work and larger runtime-sensitive changes:
   - `docker build -t markdown-mermaid-pdf:latest .`
   - `./scripts/smoke-test-image.sh markdown-mermaid-pdf:latest`
+- For Dockerfile or image-layout changes, `make lint` (Hadolint + Dockle) is the
+  cheapest relevant check; CI runs the same Make targets and gates publishing on them.
 - If those Docker checks are skipped, say so clearly in the final handoff.
 - If dependency, version, or compliance-related files change, also run:
   - `make info`

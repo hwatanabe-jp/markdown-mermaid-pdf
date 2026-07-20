@@ -133,6 +133,23 @@ docker compose version
    - 各図表は Chromium を起動するため時間がかかる
    - 必要に応じて図表を外部画像として保存し埋め込む
 
+## CI の lint (Hadolint / Dockle) が失敗する
+
+`build-main.yml` の `lint` ジョブは Dockerfile(Hadolint)とビルド済みイメージ
+(Dockle、CIS ベースのチェック)を検査し、失敗すると GHCR への publish を止めます。
+
+- ローカルでの再現は `make lint`(Dockerfile のみなら `make lint-dockerfile`、
+  イメージのみなら `make lint-image`)。CI と同じピン済みツールで同じ引数を実行します。
+- ツールのバージョン(digest ピン)と許容リストは `Makefile` に、
+  Hadolint のルール除外は `.hadolint.yaml` に理由コメント付きでまとめています。
+- 意図的に許容しているチェック:
+  - `DL3008`: apt パッケージは非ピン方針(CVE は週次 Trivy が担当)
+  - `CIS-DI-0001`: root 実行は bind-mount 出力の所有権を考慮した仕様
+  - `DKL-DI-0006`: `latest` タグは「安定版のみ」のタグポリシー
+  - `-ae mdf`: texlive mdframed の `*.mdf` を資格情報と誤検知するため
+- 新しい指摘が出た場合は、まず Dockerfile / イメージ側の修正を検討し、
+  仕様として受け入れる場合のみ理由コメント付きで許容リストへ追加してください。
+
 ## GitHub Actions の arm64 CI が遅い
 
 Mermaid 描画（Chromium）は CPU とメモリを使うため、build や smoke test に時間がかかることがあります。

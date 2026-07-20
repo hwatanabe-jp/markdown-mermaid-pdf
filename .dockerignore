@@ -7,10 +7,13 @@
 Dockerfile
 docker-compose.yml
 .dockerignore
+.hadolint.yaml
 
 # Documentation
-README.md
 *.md
+
+# Reference PDFs kept at repo root
+*.pdf
 
 # IDE
 .vscode

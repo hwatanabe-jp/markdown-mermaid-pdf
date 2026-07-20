@@ -22,6 +22,14 @@ if [ -n "${DOCKER_PLATFORM}" ]; then
   docker_run_args+=(--platform "${DOCKER_PLATFORM}")
 fi
 
+run_image() {
+  docker run "${docker_run_args[@]}" -v "${WORKSPACE_DIR}:/workspace" "$@"
+}
+
+page_count() {
+  run_image --entrypoint pdfinfo "${IMAGE_REF}" "$1" 2>/dev/null | awk '/Pages/ {print $2}'
+}
+
 for required_file in example.md formal-example.md; do
   if [ ! -f "${WORKSPACE_DIR}/${required_file}" ]; then
     echo "Error: required fixture '${WORKSPACE_DIR}/${required_file}' not found"
@@ -49,10 +57,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Running smoke test against ${IMAGE_REF}"
-docker run "${docker_run_args[@]}" \
-  -v "${WORKSPACE_DIR}:/workspace" \
-  "${IMAGE_REF}" \
-  example.md "${EXAMPLE_OUTPUT}"
+run_image "${IMAGE_REF}" example.md "${EXAMPLE_OUTPUT}"
 
 test -f "${WORKSPACE_DIR}/${EXAMPLE_OUTPUT}"
 
@@ -66,18 +71,9 @@ cat > "${WORKSPACE_DIR}/${PAGEBREAK_INPUT}" <<'EOF'
 EOF
 
 echo "Running pagebreak test against ${IMAGE_REF}"
-docker run "${docker_run_args[@]}" \
-  -v "${WORKSPACE_DIR}:/workspace" \
-  "${IMAGE_REF}" \
-  "${PAGEBREAK_INPUT}" "${PAGEBREAK_OUTPUT}"
+run_image "${IMAGE_REF}" "${PAGEBREAK_INPUT}" "${PAGEBREAK_OUTPUT}"
 
-PAGE_COUNT="$(
-  docker run "${docker_run_args[@]}" \
-    -v "${WORKSPACE_DIR}:/workspace" \
-    --entrypoint pdfinfo \
-    "${IMAGE_REF}" \
-    "${PAGEBREAK_OUTPUT}" 2>/dev/null | awk '/Pages/ {print $2}'
-)"
+PAGE_COUNT="$(page_count "${PAGEBREAK_OUTPUT}")"
 
 if [ -z "${PAGE_COUNT}" ]; then
   echo "Error: could not read page count from ${PAGEBREAK_OUTPUT}"
@@ -90,20 +86,11 @@ if [ "${PAGE_COUNT}" != "2" ]; then
 fi
 
 echo "Running formal style test against ${IMAGE_REF}"
-docker run "${docker_run_args[@]}" \
-  -v "${WORKSPACE_DIR}:/workspace" \
-  "${IMAGE_REF}" \
-  formal-example.md "${FORMAL_OUTPUT}" --style formal
+run_image "${IMAGE_REF}" formal-example.md "${FORMAL_OUTPUT}" --style formal
 
 test -f "${WORKSPACE_DIR}/${FORMAL_OUTPUT}"
 
-FORMAL_PAGE_COUNT="$(
-  docker run "${docker_run_args[@]}" \
-    -v "${WORKSPACE_DIR}:/workspace" \
-    --entrypoint pdfinfo \
-    "${IMAGE_REF}" \
-    "${FORMAL_OUTPUT}" 2>/dev/null | awk '/Pages/ {print $2}'
-)"
+FORMAL_PAGE_COUNT="$(page_count "${FORMAL_OUTPUT}")"
 
 if [ -z "${FORMAL_PAGE_COUNT}" ] || [ "${FORMAL_PAGE_COUNT}" -lt 6 ]; then
   echo "Error: expected at least 6 pages (cover, revision history, toc, chapters), got '${FORMAL_PAGE_COUNT}'"
@@ -121,10 +108,7 @@ doc-number などが無いため formal スタイルでは変換できないは�
 EOF
 
 echo "Running formal validation-failure test against ${IMAGE_REF} (error output below is expected)"
-if docker run "${docker_run_args[@]}" \
-  -v "${WORKSPACE_DIR}:/workspace" \
-  "${IMAGE_REF}" \
-  "${FORMAL_INVALID_INPUT}" "${FORMAL_INVALID_OUTPUT}" --style formal; then
+if run_image "${IMAGE_REF}" "${FORMAL_INVALID_INPUT}" "${FORMAL_INVALID_OUTPUT}" --style formal; then
   echo "Error: formal conversion of an invalid document should fail"
   exit 1
 fi
