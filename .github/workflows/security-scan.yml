@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Resolve stable image reference
         id: image
@@ -60,7 +60,7 @@ jobs:
           echo "image_ref=${image_ref}" >>"$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -73,11 +73,11 @@ jobs:
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
       # Pin setup-trivy to a checked release and keep the Trivy binary on the
-      # latest checked v0.71.2 release.
+      # latest checked v0.73.0 release.
       - name: Set up Trivy
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # setup-trivy v0.3.1
         with:
-          version: v0.71.2
+          version: v0.73.0
           cache: true
 
       - name: Fail on fixed critical vulnerabilities or EOL base images
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
+        uses: github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43 # v4.37.5
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
           category: trivy-${{ matrix.arch }}
