@@ -5,7 +5,7 @@ RUN_WORKSPACE = docker run --rm -v $$(pwd)/workspace:/workspace $(IMAGE)
 RUN_BASH = docker run --rm --entrypoint /bin/bash $(IMAGE) -lc
 
 # Lint tool pins (single source of truth; CI calls these targets too).
-HADOLINT_IMAGE := hadolint/hadolint:v2.14.0@sha256:27086352fd5e1907ea2b934eb1023f217c5ae087992eb59fde121dce9c9ff21e
+HADOLINT_IMAGE := hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d
 DOCKLE_IMAGE := goodwithtech/dockle:v0.4.15@sha256:eade932f793742de0aa8755406c7677cd7696f8675b6180926f7eeffa7abe6b9
 
 # Default target
