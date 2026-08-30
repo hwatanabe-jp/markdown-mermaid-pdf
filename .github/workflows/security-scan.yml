@@ -73,11 +73,11 @@ jobs:
           docker pull --platform "${{ matrix.platform }}" "${{ steps.image.outputs.image_ref }}"
 
       # Pin setup-trivy to a checked release and keep the Trivy binary on the
-      # latest checked v0.73.0 release.
+      # latest checked v0.74.0 release.
       - name: Set up Trivy
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # setup-trivy v0.3.1
         with:
-          version: v0.73.0
+          version: v0.74.0
           cache: true
 
       - name: Fail on fixed critical vulnerabilities or EOL base images
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43 # v4.37.5
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
           category: trivy-${{ matrix.arch }}
