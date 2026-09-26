@@ -9,16 +9,25 @@ function sandbox(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'makefile tests-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.copyFileSync(new URL('../Makefile', import.meta.url), path.join(dir, 'Makefile'));
+  fs.mkdirSync(path.join(dir, 'scripts'));
+  fs.copyFileSync(new URL('../scripts/lint-image.sh', import.meta.url), path.join(dir, 'scripts/lint-image.sh'));
   fs.mkdirSync(path.join(dir, 'workspace'));
   fs.mkdirSync(path.join(dir, 'bin'));
-  fs.writeFileSync(path.join(dir, 'bin/docker'), '#!/bin/sh\nprintf \'%s\\0\' "$@" >> "$DOCKER_ARGS_FILE"\n', { mode: 0o755 });
+  fs.writeFileSync(path.join(dir, 'bin/docker'), `#!/bin/sh
+printf '%s\\0' "$@" >> "$DOCKER_ARGS_FILE"
+if [ "$1 $2" = "image save" ]; then
+  printf 'archive' > "$4"
+  exit "\${DOCKER_SAVE_STATUS:-0}"
+fi
+exit "\${DOCKER_RUN_STATUS:-0}"
+`, { mode: 0o755 });
   const log = path.join(dir, 'docker-args');
   return {
     dir,
     run: (...args) => spawnSync('make', ['--no-print-directory', ...args], {
       cwd: dir,
       encoding: 'utf8',
-      env: { ...process.env, INPUT: '', OUTPUT: '', PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, DOCKER_ARGS_FILE: log },
+      env: { ...process.env, INPUT: '', OUTPUT: '', TMPDIR: dir, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, DOCKER_ARGS_FILE: log },
     }),
     dockerArgs: () => fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\0').slice(0, -1) : [],
   };
@@ -66,4 +75,35 @@ test('clean removes the generated example set and preserves other nested files',
   assert(!fs.existsSync(path.join(sample, 'dist')));
   assert(fs.existsSync(path.join(sample, 'reference.pdf')));
   assert(fs.existsSync(path.join(sample, 'documents.json')));
+});
+
+test('lint-image scans an archive of the exact digest candidate with the existing failure policy', (t) => {
+  const { run, dockerArgs } = sandbox(t);
+  const image = `ghcr.io/example/pdf@sha256:${'a'.repeat(64)}`;
+  const result = run('lint-image', `IMAGE=${image}`);
+  assert.equal(result.status, 0, result.stderr);
+  const args = dockerArgs();
+  assert.deepEqual(args.slice(0, 3), ['image', 'save', '--output']);
+  assert.equal(args[4], image);
+  const archiveDir = path.dirname(args[3]);
+  assert.deepEqual(args.slice(5, 9), ['run', '--rm', '-v', `${archiveDir}:/scan:ro`]);
+  assert.match(args[9], /^goodwithtech\/dockle:.*@sha256:/);
+  assert.deepEqual(args.slice(10), ['--exit-code', '1', '--exit-level', 'warn',
+    '-i', 'CIS-DI-0001', '-i', 'DKL-DI-0006', '-ae', 'mdf', '--input', '/scan/image.tar']);
+  assert(!fs.existsSync(archiveDir), 'successful scan must remove its archive');
+});
+
+test('lint-image propagates export and scan failures and removes temporary archives', (t) => {
+  for (const failure of ['DOCKER_SAVE_STATUS=7', 'DOCKER_RUN_STATUS=9']) {
+    const { run, dockerArgs } = sandbox(t);
+    const result = run('lint-image', failure);
+    assert.notEqual(result.status, 0);
+    const args = dockerArgs();
+    assert(!fs.existsSync(path.dirname(args[3])), 'failed scan/export must remove its archive');
+    if (failure.startsWith('DOCKER_SAVE_STATUS')) {
+      assert.equal(args.length, 5, 'failed export must not invoke Dockle');
+    } else {
+      assert(args.includes('--input'));
+    }
+  }
 });

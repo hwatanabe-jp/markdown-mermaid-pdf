@@ -88,12 +88,11 @@ lint-dockerfile:
 #   DKL-DI-0006  latest タグは「安定版のみ」のタグポリシーとして README に明記済み
 #   -ae mdf      texlive の mdframed パッケージ (*.mdf) を資格情報ファイルと誤検知するため
 lint-image:
-	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $(DOCKLE_IMAGE) \
+	@bash scripts/lint-image.sh "$(IMAGE)" "$(DOCKLE_IMAGE)" \
 		--exit-code 1 --exit-level warn \
 		-i CIS-DI-0001 \
 		-i DKL-DI-0006 \
-		-ae mdf \
-		$(IMAGE)
+		-ae mdf
 
 # Open bash shell in container
 shell:
