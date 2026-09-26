@@ -191,6 +191,11 @@ docker run --rm --entrypoint cat markdown-mermaid-pdf:latest /usr/share/doc/font
 
 ---
 
+The repository lockfile pins the complete npm dependency tree. The September 2026 refresh
+updates Puppeteer to 25.12.0, DOMPurify to 3.4.16, brace-expansion to 1.1.21,
+and ws to 8.22.0, along with compatible transitive dependencies. No new runtime
+package is required for document-set generation; it uses Node.js built-in modules.
+
 ## Updating This Notice
 
 When updating dependencies:
@@ -208,6 +213,6 @@ If you have questions about licensing or notice an inaccuracy, please open an is
 
 ---
 
-**Last Updated**: 2026-05-23
+**Last Updated**: 2026-09-27
 
 **Note**: This notice is informational and does not constitute legal advice.

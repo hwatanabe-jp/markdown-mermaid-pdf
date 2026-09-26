@@ -13,6 +13,27 @@ local function inlines_to_latex(inlines)
   return blocks_to_latex({ pandoc.Plain(inlines) })
 end
 
+-- Explicit PDF file specifications avoid URI escaping (e.g. spaces becoming
+-- literal "%20" in /F) and supply /UF for Unicode filenames. Values are hex,
+-- never authored LaTeX. XeLaTeX's xdvipdfmx supplies each link's bounding box.
+function Link(el)
+  local file = el.attributes["document-set-file"]
+  if not file then return nil end
+  local unicode_file = el.attributes["document-set-unicode-file"]
+  local destination = el.attributes["document-set-destination"] or ""
+  for _, value in ipairs({ file, unicode_file or "invalid", destination }) do
+    if value:find("[^0-9a-f]") or #value % 2 ~= 0 then
+      error("[formal] invalid document-set file link", 0)
+    end
+  end
+  local dest = destination == "" and "[0 /Fit]" or "<" .. destination .. ">"
+  return pandoc.RawInline("latex",
+    "\\leavevmode\\special{pdf:bann << /Type /Annot /Subtype /Link /Border [0 0 0]"
+    .. " /A << /S /GoToR /F << /Type /Filespec /F <" .. file .. "> /UF <"
+    .. unicode_file .. "> >> /D " .. dest .. " >> >>}"
+    .. inlines_to_latex(el.content) .. "\\special{pdf:eann}")
+end
+
 local ALIGN_PREFIX = {
   AlignCenter = ">{\\centering\\arraybackslash}",
   AlignRight = ">{\\raggedleft\\arraybackslash}",
@@ -153,8 +174,17 @@ end
 
 -- 別紙(番号なしの章)は titlesec の \sectionbreak が効かないため明示的に改ページする。
 function Header(el)
+  local blocks = {}
   if el.level == 1 and el.classes:includes("unnumbered") then
-    return { pandoc.RawBlock("latex", "\\clearpage"), el }
+    table.insert(blocks, pandoc.RawBlock("latex", "\\clearpage"))
   end
-  return nil
+  table.insert(blocks, el)
+  local anchor = el.attributes["document-set-anchor"]
+  if anchor then
+    if not anchor:match("^docset%-h%d+$") then
+      error("[formal] invalid document-set anchor", 0)
+    end
+    table.insert(blocks, pandoc.RawBlock("latex", "\\hypertarget{" .. anchor .. "}{}"))
+  end
+  return blocks
 end

@@ -3,15 +3,30 @@ set -euo pipefail
 
 usage() {
   echo "Usage: generate-pdf.sh <input.md> [output.pdf] [--style default|formal]"
+  echo "       generate-pdf.sh --set <documents.json> [output-directory]"
   echo "Example: generate-pdf.sh document.md output.pdf --style formal"
 }
 
-INPUT_MD=""
+if [ "${1:-}" = "--set" ]; then
+  shift
+  exec node "$(dirname -- "$0")/generate-document-set.mjs" "$@"
+fi
+
+INPUT_FILE=""
 OUTPUT_PDF=""
 STYLE="default"
+RESOURCE_PATH=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --resource-path)
+      if [ $# -lt 2 ]; then
+        echo "Error: --resource-path requires a value"
+        exit 1
+      fi
+      RESOURCE_PATH="$2"
+      shift 2
+      ;;
     --style)
       if [ $# -lt 2 ]; then
         echo "Error: --style requires a value (default|formal)"
@@ -35,8 +50,8 @@ while [ $# -gt 0 ]; do
       exit 1
       ;;
     *)
-      if [ -z "${INPUT_MD}" ]; then
-        INPUT_MD="$1"
+      if [ -z "${INPUT_FILE}" ]; then
+        INPUT_FILE="$1"
       elif [ -z "${OUTPUT_PDF}" ]; then
         OUTPUT_PDF="$1"
       else
@@ -49,13 +64,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -z "${INPUT_MD}" ]; then
+if [ -z "${INPUT_FILE}" ]; then
   usage
   exit 1
 fi
 
-if [ ! -f "${INPUT_MD}" ]; then
-  echo "Error: Input file '${INPUT_MD}' not found"
+if [ ! -f "${INPUT_FILE}" ]; then
+  echo "Error: Input file '${INPUT_FILE}' not found"
   exit 1
 fi
 
@@ -68,22 +83,32 @@ case "${STYLE}" in
 esac
 
 if [ -z "${OUTPUT_PDF}" ]; then
-  OUTPUT_PDF="${INPUT_MD%.md}.pdf"
+  OUTPUT_PDF="${INPUT_FILE%.md}.pdf"
 fi
 
-echo "Generating PDF: ${INPUT_MD} -> ${OUTPUT_PDF} (style: ${STYLE})"
+echo "Generating PDF: ${INPUT_FILE} -> ${OUTPUT_PDF} (style: ${STYLE})"
 
-# 利用者が独自の設定を置いていない限り、既定の設定をワークスペースへ配る。
-# formal スタイルの Mermaid はコントラストの高いニュートラル配色のテーマを使う。
-for config_file in .mermaid-config.json .puppeteer.json .mermaid.css; do
-  src="/config/${config_file}"
-  if [ "${STYLE}" = "formal" ] && [ "${config_file}" = ".mermaid-config.json" ]; then
-    src="/config/formal/mermaid-config.json"
+# 明示した環境変数、作業ディレクトリの設定、スタイルの既定値の順に使う。
+# 既定設定を作業ディレクトリへ書き込まず、実行ごとにスタイルを選び直す。
+select_config() {
+  local name="$1" local_file="$2" default_file="$3"
+  if [ -z "${!name:-}" ]; then
+    if [ -f "${local_file}" ]; then
+      printf -v "${name}" '%s' "${local_file}"
+    else
+      printf -v "${name}" '%s' "${default_file}"
+    fi
   fi
-  if [ ! -f "${config_file}" ]; then
-    cp "${src}" "${config_file}"
-  fi
-done
+  export "${name?}"
+}
+
+mermaid_config=/config/.mermaid-config.json
+if [ "${STYLE}" = "formal" ]; then
+  mermaid_config=/config/formal/mermaid-config.json
+fi
+select_config MERMAID_FILTER_MERMAID_CONFIG .mermaid-config.json "${mermaid_config}"
+select_config MERMAID_FILTER_PUPPETEER_CONFIG .puppeteer.json /config/.puppeteer.json
+select_config MERMAID_FILTER_MERMAID_CSS .mermaid.css /config/.mermaid.css
 
 if [ "${STYLE}" = "formal" ]; then
   # formal: スキーマ検証(validate.lua)を mermaid-filter より先に実行して早期に失敗させ、
@@ -108,10 +133,10 @@ else
   )
 fi
 
-pandoc "${INPUT_MD}" \
+pandoc "${INPUT_FILE}" \
   -o "${OUTPUT_PDF}" \
   --pdf-engine=xelatex \
-  --resource-path="$(dirname -- "${INPUT_MD}"):." \
+  --resource-path="${RESOURCE_PATH:-$(dirname -- "${INPUT_FILE}"):.}" \
   "${style_args[@]}" \
   --verbose
 

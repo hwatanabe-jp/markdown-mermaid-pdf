@@ -80,6 +80,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` は `main` ブランチの検証済みビルドです
 - 公開リリースは `linux/amd64` と `linux/arm64` の native runner で smoke test 済みのマルチアーキテクチャイメージです
 - release / main CI の GitHub Actions は full commit SHA に固定しています
+- main・安定版の公開前に Hadolint / Dockle と smoke test を実行します
 - 公開イメージには build provenance と SBOM attestation を付与します
 - Mermaid 系 npm 依存は CI で high/critical advisory を検査し、安定版 `latest` も定期スキャンします
 - ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
@@ -92,8 +93,10 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make rebuild`              | キャッシュなしで再ビルド              |
 | `make run`                  | Docker Compose 経由でシェルを起動     |
 | `make example`              | example.md から PDF を生成            |
+| `make example-set`         | マスタ・詳細文書の一式を個別 PDF として生成 |
 | `make example-formal`       | formal-example.md からお硬い PDF を生成 |
 | `make test`                 | PDF が正常に生成されるかテスト        |
+| `make test-unit`            | Docker 不要の軽量テスト（Node.js が必要） |
 | `make convert INPUT=<file>` | 指定したファイルを変換                |
 | `make shell`                | コンテナ内で bash シェルを起動        |
 | `make clean`                | 生成された PDF をクリーンアップ       |
@@ -101,6 +104,13 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make info`                 | Docker イメージとツールバージョン表示 |
 | `make license-check`        | ライセンスコンプライアンスを検証      |
 | `make help`                 | ヘルプメッセージを表示                |
+
+`make test-unit` は参照解決・設定選択・Makefile の回帰テストを実行します。
+Pandoc がインストールされていれば formal の検証・番号整合性も検査し、なければその検査だけを
+スキップします。`PANDOC_BIN` で Pandoc の実行ファイルを指定できます。PDF 生成は `make test` で検証します。
+
+空白を含むパスは、例えば `make convert INPUT='資料/設計 書.md' OUTPUT='設計 書.pdf'` のように指定できます。
+`make clean` は workspace 直下の PDF・ログと、サンプル一式の `workspace/formal-set/dist/` を削除します。
 
 ## お硬い文書モード（formal スタイル）
 
@@ -127,10 +137,31 @@ docker run --rm \
 
 詳細は [Mermaid 公式ドキュメント](https://mermaid.js.org/)を参照してください。
 
+### マスタ文書・詳細文書の一括生成
+
+設定ファイルで対象と出力名を指定すると、formal 文書を個別 PDF の一式として生成できます。
+文書一覧、版・状態の表紙表示、文書間・見出し間の参照に対応します。
+
+```bash
+docker run --rm -v "$PWD/workspace:/workspace" \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest \
+  --set formal-set/documents.json formal-set/dist
+```
+
+出力先には未作成のディレクトリを指定してください。全件成功時のみ一式を確定します。
+サンプルは `workspace/formal-set/`（`make example-set`）にあります。
+設定・参照記法・PDF ビューアの制約は [formal モードの文書一式の生成](docs/formal-mode.md#文書一式の生成) を参照してください。
+
 ## カスタマイズ
 
 - **Mermaid/Puppeteer 設定**: `/config/.mermaid-config.json`, `/config/.puppeteer.json`, `/config/.mermaid.css`
 - **LaTeX 設定**: `/config/header.tex` でフォント、レイアウト、見出しスタイルを変更可能
+
+Mermaid/Puppeteer の設定は、明示した環境変数（`MERMAID_FILTER_MERMAID_CONFIG`、
+`MERMAID_FILTER_PUPPETEER_CONFIG`、`MERMAID_FILTER_MERMAID_CSS`）、作業ディレクトリ内の
+同名設定ファイル、イメージ内の既定設定の順に使います。既定設定をワークスペースへコピーしないため、
+`default` と `formal` を切り替えると実行ごとに既定テーマを選び直します。
+formal の既定 Mermaid 設定は `/config/formal/mermaid-config.json` です。
 
 カスタム設定でイメージを再ビルドする例：
 
