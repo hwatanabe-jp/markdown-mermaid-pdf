@@ -149,6 +149,11 @@ Dockle (CIS ベースのチェック) は amd64 の検証・公開ジョブで�
 
 - ローカルでの再現は `make lint`(Dockerfile のみなら `make lint-dockerfile`、
   イメージのみなら `make lint-image`)。CI と同じピン済みツールで同じ引数を実行します。
+- `make lint-image` はローカルにある対象イメージを `docker image save` で一時アーカイブにし、
+  Dockle の `--input` で検査します。対象がまだなければ先に `docker pull <image-ref>` が必要です。
+  digest 指定の公開候補で `Manifest does not match provided manifest digest` となる
+  Dockle の読み取り経路を避け、smoke test と同じ候補を検査します。
+  一時アーカイブ分の空き容量が必要です。成功・失敗どちらの場合も終了時に削除します。
 - ツールのバージョン(digest ピン)と許容リストは `Makefile` に、
   Hadolint のルール除外は `.hadolint.yaml` に理由コメント付きでまとめています。
 - 意図的に許容しているチェック:
