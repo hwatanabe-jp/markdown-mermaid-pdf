@@ -7,10 +7,21 @@ on:
   push:
     branches:
       - main
+    # Filter before concurrency so a docs-only push cannot cancel an image build.
+    paths-ignore:
+      - README.md
+      - TROUBLESHOOTING.md
+      - AGENTS.md
+      - CLAUDE.md
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   IMAGE_NAME: markdown-mermaid-pdf
@@ -18,12 +29,32 @@ env:
 
 jobs:
   meta:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       image_repo: ${{ steps.meta.outputs.image_repo }}
+      image_required: ${{ steps.changes.outputs.image_required }}
 
     steps:
+      - name: Checkout repository for change detection
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Keep the workflow and check names present even for documentation-only PRs.
+      - name: Decide whether image validation is required
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            image_required="$(bash scripts/ci-image-required.sh "${BASE_SHA}" "${GITHUB_SHA}")"
+          else
+            image_required=true
+          fi
+          echo "image_required=${image_required}" >>"$GITHUB_OUTPUT"
+
       - name: Compute image metadata
         id: meta
         shell: bash
@@ -33,10 +64,11 @@ jobs:
           image_repo="ghcr.io/${owner_lower}/${IMAGE_NAME}"
           echo "image_repo=${image_repo}" >>"$GITHUB_OUTPUT"
 
-  # Delivery gate: Hadolint (Dockerfile) + Dockle (built image, CIS-DI checks).
-  # Runs on every event; publish jobs depend on it so nothing reaches GHCR
-  # when linting fails. Tool pins and accepted checks live in the Makefile.
+  # Hadolint is the cheap build gate. Dockle checks the same amd64 candidate
+  # as the smoke tests below, before the main manifest can be published.
   lint:
+    needs: meta
+    if: needs.meta.outputs.image_required == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -66,30 +98,22 @@ jobs:
           sarif_file: hadolint-results.sarif
           category: hadolint
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Build candidate image for image lint
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          load: true
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: ${{ env.TEST_IMAGE_TAG }}
-
-      - name: Lint image with Dockle
-        shell: bash
-        run: |
-          set -euo pipefail
-          make lint-image IMAGE="${TEST_IMAGE_TAG}"
-
   validate_amd64:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs: [meta, lint]
+    # Fail required checks when change detection or lint fails; skip only known docs-only PRs.
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
+      (needs.meta.result != 'success' || needs.meta.outputs.image_required != 'false')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check validation prerequisites
+        env:
+          META_RESULT: ${{ needs.meta.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+        run: test "$META_RESULT" = success && test "$LINT_RESULT" = success
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -102,9 +126,12 @@ jobs:
           context: .
           load: true
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-amd64
+          cache-to: type=gha,scope=pdf-amd64,mode=max
           tags: ${{ env.TEST_IMAGE_TAG }}
+
+      - name: Lint amd64 candidate image with Dockle
+        run: make lint-image IMAGE="${TEST_IMAGE_TAG}"
 
       - name: Smoke test amd64 candidate image
         shell: bash
@@ -122,10 +149,20 @@ jobs:
             -lc 'npm audit --prefix /opt/mermaid-tools --omit=dev --audit-level=high'
 
   validate_arm64:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs: [meta, lint]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
+      (needs.meta.result != 'success' || needs.meta.outputs.image_required != 'false')
     runs-on: ubuntu-24.04-arm
 
     steps:
+      - name: Check validation prerequisites
+        env:
+          META_RESULT: ${{ needs.meta.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+        run: test "$META_RESULT" = success && test "$LINT_RESULT" = success
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -138,8 +175,8 @@ jobs:
           context: .
           load: true
           platforms: linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-arm64
+          cache-to: type=gha,scope=pdf-arm64,mode=max
           tags: ${{ env.TEST_IMAGE_TAG }}
 
       - name: Smoke test arm64 candidate image
@@ -181,8 +218,8 @@ jobs:
           context: .
           platforms: linux/amd64
           outputs: type=image,name=${{ needs.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-amd64
+          cache-to: type=gha,scope=pdf-amd64,mode=max
           provenance: mode=max
           sbom: true
 
@@ -194,6 +231,11 @@ jobs:
           set -euo pipefail
           docker pull "${IMAGE_REF}"
           ./scripts/smoke-test-image.sh "${IMAGE_REF}"
+
+      - name: Lint pushed amd64 candidate with Dockle
+        env:
+          IMAGE_REF: ${{ needs.meta.outputs.image_repo }}@${{ steps.build.outputs.digest }}
+        run: make lint-image IMAGE="${IMAGE_REF}"
 
       - name: Audit bundled Mermaid npm packages
         shell: bash
@@ -239,8 +281,8 @@ jobs:
           context: .
           platforms: linux/arm64
           outputs: type=image,name=${{ needs.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-arm64
+          cache-to: type=gha,scope=pdf-arm64,mode=max
           provenance: mode=max
           sbom: true
 
