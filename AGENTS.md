@@ -6,48 +6,50 @@ This file is the canonical AI-agent memory for this repository.
 
 ## Repository Purpose
 
-This repository builds and publishes a Docker image that converts Markdown to PDF with:
+This personal project builds and publishes a Markdown-to-PDF Docker image using
+Pandoc, XeLaTeX, and `mermaid-filter` with Chromium/Puppeteer. The optional
+`--style formal` mode in `config/formal/` renders Digital-Agency-style documents
+from schema-conforming Markdown.
 
-- Pandoc
-- XeLaTeX
-- Mermaid rendering through `mermaid-filter`
-- Chromium/Puppeteer for Mermaid diagrams
-- An optional `--style formal` mode (`config/formal/`) that renders Digital-Agency-style
-  formal documents from schema-conforming Markdown; the schema is documented in
-  `docs/formal-mode.md` and exercised by `workspace/formal-example.md` and the smoke test
-
-## Project Posture
-
-This is a personal project.
-
-Keep the workflow minimal, calm, and professional:
-
-- prefer the smallest reviewable diff
-- avoid adding process-heavy governance unless explicitly requested
-- optimize for maintainability and clear release behavior over elaborate automation
-
-## Development Rules
+## Development
 
 - Treat `main` as the day-to-day development branch and keep it in a working state.
 - Prefer short-lived branches only for larger or riskier changes.
-- Before considering work complete, run the smallest relevant local checks when practical.
+- Prefer small, reviewable changes within the existing simple repo structure;
+  avoid elaborate automation or governance unless requested.
+- Prefer tracked config files and scripts over large inline shell or Dockerfile heredocs.
+- Reuse `scripts/generate-pdf.sh` and `scripts/smoke-test-image.sh` where applicable.
+- Keep Docker, Compose, README, and workflow behavior aligned.
+- Complete the requested implementation, matching documentation, and relevant
+  verification. Continue routine local edits and checks, including fixing failures
+  caused by the change and rerunning affected checks, without asking at each step.
+
+## Verification
+
+- Choose the smallest checks that cover the change. `make test-unit` runs local
+  tests without Docker (Node.js required; formal tests also need Pandoc); select
+  affected test files for narrower changes. Documentation-only edits need a diff
+  and reference check, not runtime tests.
 - Do not run local Docker build or smoke checks for dependency updates, workflow maintenance, documentation updates, or other non-feature maintenance unless explicitly requested.
-- Local Docker checks remain optional for feature work and larger runtime-sensitive changes:
-  - `docker build -t markdown-mermaid-pdf:latest .`
-  - `./scripts/smoke-test-image.sh markdown-mermaid-pdf:latest`
-- For Dockerfile or image-layout changes, `make lint` (Hadolint + Dockle) is the
-  cheapest relevant check; CI runs the same Make targets and gates publishing on them.
-- If those Docker checks are skipped, say so clearly in the final handoff.
-- If dependency, version, or compliance-related files change, also run:
-  - `make info`
-  - `make license-check`
+- For feature work, including larger runtime-sensitive changes, local Docker
+  build and smoke checks are optional: `make build` and `make test`.
+- For Dockerfile or image-layout changes, run `make lint`. It combines
+  `make lint-dockerfile` (Hadolint, requires Docker) and `make lint-image`
+  (Dockle, requires Docker and a built image). CI uses these targets to gate publishing.
+- For dependency, version, or compliance-related changes, also run `make info`
+  and `make license-check`; both inspect a built image and require Docker.
+- Image checks must use an image reflecting the changed inputs (`IMAGE=...`
+  selects it). If Docker or that image is unavailable, run applicable checks that
+  remain possible and report image verification as incomplete. Do not build an
+  image just to satisfy these checks when the maintenance rule above prohibits it.
+- Report checks performed and relevant gaps. State when Docker build/smoke checks
+  were skipped; do not present results from an older image as validating the change.
 
 ## Release Rules
 
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` is for stable releases only.
 - `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:main` is for validated `main` branch builds.
 - Public releases are triggered from Git tags starting with `v`; use `vX.Y.Z` for normal stable releases.
-- Do not repurpose `latest` for development snapshots.
 - Keep release flow simple: develop on `main`, validate, tag, release.
 
 ## Documentation Rules
@@ -65,18 +67,13 @@ When behavior changes, update the matching docs in the same change:
 - Do not describe the container as suitable for safely processing untrusted Markdown or Mermaid input.
 - Remember that the container runs as root by default, so bind-mounted output ownership can differ from the host user.
 
-## Implementation Preferences
+## Task References
 
-- Preserve the current simple repo shape unless a redesign is explicitly requested.
-- Prefer tracked config files and scripts over large inline shell or Dockerfile heredocs.
-- Reuse existing entrypoints and scripts when possible:
-  - `scripts/generate-pdf.sh`
-  - `scripts/smoke-test-image.sh`
-- Keep Docker, Compose, README, and workflow behavior aligned.
+Read the references relevant to the task:
 
-## Practical References
-
-- `README.md` is the user-facing contract.
-- `Makefile` is the quickest guide to local developer workflows.
-- `.github/workflows/build-main.yml` defines validated development image publishing.
-- `.github/workflows/release.yml` defines stable release publishing.
+- Usage or tag-policy changes: `README.md` is the user-facing contract.
+- Choosing or changing local commands: `Makefile`.
+- Formal-mode changes: `docs/formal-mode.md` for the schema and
+  `workspace/formal-example.md` for an example; check the matching tests.
+- Development image publishing: `.github/workflows/build-main.yml`.
+- Stable release publishing: `.github/workflows/release.yml`.

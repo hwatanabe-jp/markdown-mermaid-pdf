@@ -143,8 +143,9 @@ docker compose version
 
 ## CI の lint (Hadolint / Dockle) が失敗する
 
-`build-main.yml` の `lint` ジョブは Dockerfile(Hadolint)とビルド済みイメージ
-(Dockle、CIS ベースのチェック)を検査し、失敗すると GHCR への publish を止めます。
+`build-main.yml` の `lint` ジョブは Dockerfile を Hadolint で検査します。
+Dockle (CIS ベースのチェック) は amd64 の検証・公開ジョブで、smoke test と同じ候補イメージを検査します。
+いずれかが失敗すると、公開タグ `:main` の更新を止めます。
 
 - ローカルでの再現は `make lint`(Dockerfile のみなら `make lint-dockerfile`、
   イメージのみなら `make lint-image`)。CI と同じピン済みツールで同じ引数を実行します。

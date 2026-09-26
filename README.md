@@ -85,6 +85,16 @@ docker compose run --rm markdown-mermaid-pdf-shell
 - Mermaid 系 npm 依存は CI で high/critical advisory を検査し、安定版 `latest` も定期スキャンします
 - ローカルの `make build` / `docker compose build` は手元用の `markdown-mermaid-pdf:latest` を作成します
 
+CI では各アーキテクチャのイメージを1回ずつビルドし、amd64 の候補には Dockle と
+smoke test の両方を実行します。ビルドキャッシュはアーキテクチャ別に分け、main と release で共用します。
+同じ PR・ブランチへの連続更新では古い CI 実行をキャンセルします。手動実行は push と別枠で扱い、
+常に両アーキテクチャを検証します。
+
+`README.md`、`TROUBLESHOOTING.md`、`AGENTS.md`、`CLAUDE.md`、`docs/**` だけの変更では、
+PR のイメージ検証を省略し、main への push では CI を起動しません。この場合、公開済みの `:main` は更新されません。
+`workspace/` のサンプル Markdown、設定、スクリプト、ワークフローなどの変更は検証対象です。
+PR の必須チェック名は維持し、変更判定や Dockerfile lint が失敗した場合は検証チェックも失敗します。
+
 ## Makefile コマンド一覧
 
 | コマンド                    | 説明                                  |

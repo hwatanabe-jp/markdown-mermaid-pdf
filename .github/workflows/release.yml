@@ -30,9 +30,11 @@ jobs:
           image_repo="ghcr.io/${owner_lower}/${IMAGE_NAME}"
           version="${GITHUB_REF_NAME}"
           image_tag="${image_repo}:${version}"
-          echo "version=${version}" >>"$GITHUB_OUTPUT"
-          echo "image_repo=${image_repo}" >>"$GITHUB_OUTPUT"
-          echo "image_tag=${image_tag}" >>"$GITHUB_OUTPUT"
+          {
+            echo "version=${version}"
+            echo "image_repo=${image_repo}"
+            echo "image_tag=${image_tag}"
+          } >>"$GITHUB_OUTPUT"
 
   build_amd64:
     runs-on: ubuntu-latest
@@ -42,6 +44,7 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
+      image_versions: ${{ steps.versions.outputs.image_versions }}
 
     steps:
       - name: Checkout repository
@@ -67,8 +70,8 @@ jobs:
           context: .
           platforms: linux/amd64
           outputs: type=image,name=${{ needs.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-amd64
+          cache-to: type=gha,scope=pdf-amd64,mode=max
           provenance: mode=max
           sbom: true
 
@@ -96,6 +99,37 @@ jobs:
             --entrypoint /bin/bash \
             "${IMAGE_REF}" \
             -lc 'npm audit --prefix /opt/mermaid-tools --omit=dev --audit-level=high'
+
+      - name: Capture bundled tool versions
+        id: versions
+        shell: bash
+        env:
+          IMAGE_REF: ${{ needs.meta.outputs.image_repo }}@${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --entrypoint /bin/bash \
+            "${IMAGE_REF}" \
+            -lc '
+              {
+                echo "## Bundled Versions"
+                echo ""
+                echo "- Node.js: $(node --version)"
+                echo "- npm: $(npm --version)"
+                echo "- Pandoc: $(pandoc --version | head -n 1)"
+                echo "- XeLaTeX: $(xelatex --version | head -n 1)"
+                echo "- Chromium: $(chromium --version)"
+                echo "- Mermaid packages:"
+                npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null | sed "1d; s/^/  /"
+              } > /tmp/IMAGE_VERSIONS.md
+              cat /tmp/IMAGE_VERSIONS.md
+            ' > IMAGE_VERSIONS.md
+          delimiter="image_versions_$(cat /proc/sys/kernel/random/uuid)"
+          {
+            echo "image_versions<<${delimiter}"
+            cat IMAGE_VERSIONS.md
+            echo "${delimiter}"
+          } >>"$GITHUB_OUTPUT"
 
   build_arm64:
     runs-on: ubuntu-24.04-arm
@@ -127,8 +161,8 @@ jobs:
           context: .
           platforms: linux/arm64
           outputs: type=image,name=${{ needs.meta.outputs.image_repo }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=pdf-arm64
+          cache-to: type=gha,scope=pdf-arm64,mode=max
           provenance: mode=max
           sbom: true
 
@@ -165,30 +199,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Capture bundled tool versions
+      - name: Restore bundled tool versions
         shell: bash
         env:
-          IMAGE_REF: ${{ needs.meta.outputs.image_repo }}@${{ needs.build_amd64.outputs.digest }}
+          IMAGE_VERSIONS: ${{ needs.build_amd64.outputs.image_versions }}
         run: |
-          set -euo pipefail
-          docker pull "${IMAGE_REF}"
-          docker run --rm \
-            --entrypoint /bin/bash \
-            "${IMAGE_REF}" \
-            -lc '
-              {
-                echo "## Bundled Versions"
-                echo ""
-                echo "- Node.js: $(node --version)"
-                echo "- npm: $(npm --version)"
-                echo "- Pandoc: $(pandoc --version | head -n 1)"
-                echo "- XeLaTeX: $(xelatex --version | head -n 1)"
-                echo "- Chromium: $(chromium --version)"
-                echo "- Mermaid packages:"
-                npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null | sed "1d; s/^/  /"
-              } > /tmp/IMAGE_VERSIONS.md
-              cat /tmp/IMAGE_VERSIONS.md
-            ' > IMAGE_VERSIONS.md
+          printf '%s\n' "$IMAGE_VERSIONS" > IMAGE_VERSIONS.md
 
       - name: Publish validated release manifest
         shell: bash
@@ -228,6 +244,8 @@ jobs:
             echo "## Usage"
             echo '```bash'
             echo "docker pull ${{ needs.meta.outputs.image_tag }}"
+            # Keep $PWD literal in the command shown to release users.
+            # shellcheck disable=SC2016
             echo 'docker run --rm -v "$PWD/workspace:/workspace" ${{ needs.meta.outputs.image_tag }} document.md output.pdf'
             echo '```'
             echo ""
