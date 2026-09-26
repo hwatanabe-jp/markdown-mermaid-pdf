@@ -69,7 +69,7 @@ export function indexDocuments(documents) {
     doc.headings = new Map();
     const counts = [0, 0, 0, 0];
     let sequence = 0;
-    doc.ast = walk(doc.ast, (node) => {
+    doc.ast.blocks = walk(doc.ast.blocks, (node) => {
       const attr = node.t === 'Header' ? node.c[1] : node.c?.[0];
       if (Array.isArray(attr) && typeof attr[0] === 'string' && /^docset-h\d+$/.test(attr[0])) {
         fail(`${doc.input}: id '${attr[0]}' is reserved for document-set destinations`);
@@ -166,7 +166,7 @@ export function generateSet(manifestPath, outputPath) {
   for (const doc of documents) {
     try {
       doc.ast = JSON.parse(run('pandoc', [doc.input, '-f', 'markdown', '-t', 'json',
-        '-L', '/config/formal/validate.lua', '-L', '/config/formal/index.lua']));
+        '-L', '/config/formal/validate.lua', '-L', '/config/formal/document-info.lua']));
     } catch (error) { fail(`${doc.input}: ${error.message}`); }
   }
   indexDocuments(documents);

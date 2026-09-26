@@ -1,8 +1,10 @@
-.PHONY: help build rebuild run clean clean-all test shell example example-formal example-set convert info license-check lint lint-dockerfile lint-image
+.PHONY: help build rebuild run clean clean-all test test-unit shell example example-formal example-set convert info license-check lint lint-dockerfile lint-image
 
 IMAGE ?= markdown-mermaid-pdf:latest
-RUN_WORKSPACE = docker run --rm -v $$(pwd)/workspace:/workspace $(IMAGE)
+RUN_WORKSPACE = docker run --rm -v "$$(pwd)/workspace:/workspace" $(IMAGE)
 RUN_BASH = docker run --rm --entrypoint /bin/bash $(IMAGE) -lc
+# Pass filenames through the environment so shell metacharacters stay literal.
+export INPUT OUTPUT
 
 # Lint tool pins (single source of truth; CI calls these targets too).
 HADOLINT_IMAGE := hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d
@@ -18,6 +20,7 @@ help:
 	@echo "  make example-formal - Generate formal-style PDF from formal-example.md"
 	@echo "  make example-set    - Generate a formal document set in formal-set/dist"
 	@echo "  make test           - Test PDF generation"
+	@echo "  make test-unit      - Run local tests without Docker (formal tests need Pandoc)"
 	@echo "  make shell          - Open bash shell in container"
 	@echo "  make clean          - Remove generated PDFs and Docker artifacts"
 	@echo "  make rebuild        - Clean build (no cache)"
@@ -68,13 +71,16 @@ test:
 	@echo "Testing PDF generation..."
 	@./scripts/smoke-test-image.sh $(IMAGE)
 
+test-unit:
+	node --test tests/document-set.test.mjs tests/generate-pdf.test.mjs tests/makefile.test.mjs tests/formal.test.mjs
+
 # Lint Dockerfile and built image (same commands CI runs)
 lint: lint-dockerfile lint-image
 
 # Static Dockerfile lint; picks up .hadolint.yaml from the repo root.
 # HADOLINT_ARGS is a hook for CI (e.g. HADOLINT_ARGS="-f sarif").
 lint-dockerfile:
-	@docker run --rm -v $$(pwd):/wd:ro -w /wd $(HADOLINT_IMAGE) \
+	@docker run --rm -v "$$(pwd):/wd:ro" -w /wd $(HADOLINT_IMAGE) \
 		hadolint $(HADOLINT_ARGS) Dockerfile
 
 # Image lint against $(IMAGE). Accepted checks (documented in TROUBLESHOOTING.md):
@@ -99,6 +105,7 @@ clean:
 	@echo "Cleaning up..."
 	rm -f workspace/*.pdf
 	rm -f workspace/*.log
+	rm -rf workspace/formal-set/dist
 	@docker compose down -v 2>/dev/null || true
 	@echo "Cleanup complete"
 
@@ -112,16 +119,20 @@ clean-all: clean
 # Usage: make convert INPUT=document.md [OUTPUT=output.pdf]
 # OUTPUT を省略した場合はコンテナ側 (generate-pdf.sh) が入力名から導出する。
 convert:
-	@if [ -z "$(INPUT)" ]; then \
+	@if [ -z "$${INPUT}" ]; then \
 		echo "Error: INPUT variable is required"; \
 		echo "Usage: make convert INPUT=document.md [OUTPUT=output.pdf]"; \
 		exit 1; \
 	fi
-	@if [ ! -f workspace/$(INPUT) ]; then \
-		echo "Error: workspace/$(INPUT) not found"; \
+	@if [ ! -f "workspace/$${INPUT}" ]; then \
+		echo "Error: workspace/$${INPUT} not found"; \
 		exit 1; \
 	fi
-	$(RUN_WORKSPACE) $(INPUT) $(OUTPUT)
+	@if [ -n "$${OUTPUT}" ]; then \
+		$(RUN_WORKSPACE) "$${INPUT}" "$${OUTPUT}"; \
+	else \
+		$(RUN_WORKSPACE) "$${INPUT}"; \
+	fi
 	@echo "Done!"
 
 # Show Docker image info

@@ -164,8 +164,10 @@ local function validate_headings(blocks)
   local seen_heading = false
   local body_before_heading = false
   local numbered_chapters = 0
+  local numbered_details = 0
 
-  for _, block in ipairs(blocks) do
+  -- Walk only the body, in document order; headings in metadata are not chapters.
+  pandoc.Pandoc(blocks):walk({ traverse = "topdown", Block = function(block)
     if block.t == "Header" then
       if block.level > 4 then
         add_error(heading_label(block) .. " : 見出しは4階層(####)までです")
@@ -180,13 +182,24 @@ local function validate_headings(blocks)
         prev_level = block.level
       end
       seen_heading = true
-      if block.level == 1 and not block.classes:includes("unnumbered") then
-        numbered_chapters = numbered_chapters + 1
+      if not block.classes:includes("unnumbered") then
+        if block.level == 1 then
+          numbered_chapters = numbered_chapters + 1
+        end
+        if block.level < 4 then
+          numbered_details = 0
+        elseif block.level == 4 then
+          numbered_details = numbered_details + 1
+          if numbered_details > 20 then
+            add_error(heading_label(block) .. " : 番号付きの細目(####)は各項20件までです")
+          end
+        end
       end
-    elseif not seen_heading and block.t ~= "Null" then
+    -- A Div is only a wrapper; its contents determine whether body text precedes a chapter.
+    elseif not seen_heading and block.t ~= "Null" and block.t ~= "Div" then
       body_before_heading = true
     end
-  end
+  end })
 
   if body_before_heading then
     add_error("最初の見出し(章)より前に本文があります。本文は必ず章(#)の配下に置いてください")

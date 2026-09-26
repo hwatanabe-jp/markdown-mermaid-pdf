@@ -6,8 +6,9 @@ function Pandoc(doc)
     info[key] = pandoc.MetaString(pandoc.utils.stringify(doc.meta[key] or ""))
   end
   doc.meta["document-set-info"] = pandoc.MetaMap(info)
-  return doc:walk({ Header = function(header)
+  doc.blocks = pandoc.Pandoc(doc.blocks):walk({ Header = function(header)
     header.attributes["document-set-title"] = pandoc.utils.stringify(header.content)
     return header
-  end })
+  end }).blocks
+  return doc
 end
