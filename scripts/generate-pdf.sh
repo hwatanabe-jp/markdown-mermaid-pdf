@@ -3,15 +3,30 @@ set -euo pipefail
 
 usage() {
   echo "Usage: generate-pdf.sh <input.md> [output.pdf] [--style default|formal]"
+  echo "       generate-pdf.sh --set <documents.json> [output-directory]"
   echo "Example: generate-pdf.sh document.md output.pdf --style formal"
 }
+
+if [ "${1:-}" = "--set" ]; then
+  shift
+  exec node "$(dirname -- "$0")/generate-document-set.mjs" "$@"
+fi
 
 INPUT_MD=""
 OUTPUT_PDF=""
 STYLE="default"
+RESOURCE_PATH=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --resource-path)
+      if [ $# -lt 2 ]; then
+        echo "Error: --resource-path requires a value"
+        exit 1
+      fi
+      RESOURCE_PATH="$2"
+      shift 2
+      ;;
     --style)
       if [ $# -lt 2 ]; then
         echo "Error: --style requires a value (default|formal)"
@@ -111,7 +126,7 @@ fi
 pandoc "${INPUT_MD}" \
   -o "${OUTPUT_PDF}" \
   --pdf-engine=xelatex \
-  --resource-path="$(dirname -- "${INPUT_MD}"):." \
+  --resource-path="${RESOURCE_PATH:-$(dirname -- "${INPUT_MD}"):.}" \
   "${style_args[@]}" \
   --verbose
 

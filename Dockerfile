@@ -69,6 +69,8 @@ RUN npm ci --omit=dev --ignore-scripts \
 
 # Set environment variables for Puppeteer
 ENV PUPPETEER_DISABLE_HEADLESS_WARNING=true
+# Pandoc must be able to open image paths containing Japanese characters.
+ENV LANG=C.UTF-8
 
 COPY config/ /config/
 
@@ -76,6 +78,7 @@ COPY config/ /config/
 WORKDIR /workspace
 
 COPY scripts/generate-pdf.sh /usr/local/bin/generate-pdf.sh
+COPY scripts/generate-document-set.mjs /usr/local/bin/generate-document-set.mjs
 RUN chmod +x /usr/local/bin/generate-pdf.sh
 
 # Verify installations

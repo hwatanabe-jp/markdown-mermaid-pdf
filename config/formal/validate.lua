@@ -68,6 +68,15 @@ local function heading_label(header)
 end
 
 local function validate_and_decorate_meta(meta)
+  for _, key in ipairs({ "version", "status" }) do
+    if meta[key] ~= nil then
+      local kind = meta_type(meta[key])
+      if (kind ~= "Inlines" and kind ~= "Blocks" and kind ~= "string")
+          or not is_present(meta[key]) then
+        add_error(string.format("'%s' は空でない文字列で指定してください", key))
+      end
+    end
+  end
   for _, key in ipairs(REQUIRED_META) do
     if not is_present(meta[key]) then
       add_error(string.format("必須メタデータ '%s' がありません", key))

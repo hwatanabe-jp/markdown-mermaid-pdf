@@ -92,6 +92,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make rebuild`              | キャッシュなしで再ビルド              |
 | `make run`                  | Docker Compose 経由でシェルを起動     |
 | `make example`              | example.md から PDF を生成            |
+| `make example-set`         | マスタ・詳細文書の一式を個別 PDF として生成 |
 | `make example-formal`       | formal-example.md からお硬い PDF を生成 |
 | `make test`                 | PDF が正常に生成されるかテスト        |
 | `make convert INPUT=<file>` | 指定したファイルを変換                |
@@ -126,6 +127,21 @@ docker run --rm \
 `workspace/example.md` に Mermaid 図表を含むサンプルドキュメントがあります。フローチャート、ガントチャート、シーケンス図などに対応しています。
 
 詳細は [Mermaid 公式ドキュメント](https://mermaid.js.org/)を参照してください。
+
+### マスタ文書・詳細文書の一括生成
+
+設定ファイルで対象と出力名を指定すると、formal 文書を個別 PDF の一式として生成できます。
+文書一覧、版・状態の表紙表示、文書間・見出し間の参照に対応します。
+
+```bash
+docker run --rm -v "$PWD/workspace:/workspace" \
+  ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest \
+  --set formal-set/documents.json formal-set/dist
+```
+
+出力先には未作成のディレクトリを指定してください。全件成功時のみ一式を確定します。
+サンプルは `workspace/formal-set/`（`make example-set`）にあります。
+設定・参照記法・PDF ビューアの制約は [formal モードの文書一式の生成](docs/formal-mode.md#文書一式の生成) を参照してください。
 
 ## カスタマイズ
 

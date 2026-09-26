@@ -1,4 +1,4 @@
-.PHONY: help build rebuild run clean clean-all test shell example example-formal convert info license-check lint lint-dockerfile lint-image
+.PHONY: help build rebuild run clean clean-all test shell example example-formal example-set convert info license-check lint lint-dockerfile lint-image
 
 IMAGE ?= markdown-mermaid-pdf:latest
 RUN_WORKSPACE = docker run --rm -v $$(pwd)/workspace:/workspace $(IMAGE)
@@ -16,6 +16,7 @@ help:
 	@echo "  make run            - Open a shell via Docker Compose"
 	@echo "  make example        - Generate PDF from example.md"
 	@echo "  make example-formal - Generate formal-style PDF from formal-example.md"
+	@echo "  make example-set    - Generate a formal document set in formal-set/dist"
 	@echo "  make test           - Test PDF generation"
 	@echo "  make shell          - Open bash shell in container"
 	@echo "  make clean          - Remove generated PDFs and Docker artifacts"
@@ -58,7 +59,11 @@ example-formal:
 	$(RUN_WORKSPACE) formal-example.md formal-example.pdf --style formal
 	@echo "Done! Check workspace/formal-example.pdf"
 
-# Test PDF generation with example
+# Generate the example document set (output directory must not exist).
+example-set:
+	$(RUN_WORKSPACE) --set formal-set/documents.json
+
+# Test PDF generation with examples and failure cases.
 test:
 	@echo "Testing PDF generation..."
 	@./scripts/smoke-test-image.sh $(IMAGE)

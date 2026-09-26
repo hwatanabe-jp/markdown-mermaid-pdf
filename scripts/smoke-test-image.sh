@@ -118,4 +118,9 @@ if [ -f "${WORKSPACE_DIR}/${FORMAL_INVALID_OUTPUT}" ]; then
   exit 1
 fi
 
+echo "Running document-set integration tests against ${IMAGE_REF}"
+REPO_DIR="$(cd "$(dirname -- "$0")/.." && pwd)"
+docker run "${docker_run_args[@]}" -v "${REPO_DIR}:/repo:ro" \
+  --entrypoint node "${IMAGE_REF}" --test /repo/tests/document-set.test.mjs
+
 echo "Smoke tests passed for ${IMAGE_REF}"

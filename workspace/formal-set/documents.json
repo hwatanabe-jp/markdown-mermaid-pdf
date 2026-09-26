@@ -1,0 +1,19 @@
+{
+  "documents": [
+    {
+      "id": "master",
+      "input": "マスタ 文書.md",
+      "output": "全体 構成.pdf"
+    },
+    {
+      "id": "design",
+      "input": "詳細 資料/設計.md",
+      "output": "設計 詳細.pdf"
+    },
+    {
+      "id": "operations",
+      "input": "詳細 資料/運用.md",
+      "output": "運用.pdf"
+    }
+  ]
+}
