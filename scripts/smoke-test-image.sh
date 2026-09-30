@@ -125,6 +125,7 @@ docker run "${docker_run_args[@]}" -v "${REPO_DIR}:/repo:ro" \
   /repo/tests/document-set.test.mjs \
   /repo/tests/generate-pdf.test.mjs \
   /repo/tests/formal.test.mjs \
+  /repo/tests/formal-images.integration.test.mjs \
   /repo/tests/document-set.integration.test.mjs
 
 echo "Smoke tests passed for ${IMAGE_REF}"
