@@ -39,9 +39,11 @@
 \usepackage{graphicx}
 \makeatletter
 \def\formalmaxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\formalmaxheight{\ifdim\Gin@nat@height>0.65\textheight0.65\textheight\else\Gin@nat@height\fi}
 \makeatother
-% すべての \includegraphics を紙面幅以内に収める
-\setkeys{Gin}{width=\formalmaxwidth,keepaspectratio}
+% 縦横比を保って紙面内に縮小し、見出し・キャプション用の余地を残す。
+% 小さい図は自然寸法を超えて拡大しない。
+\setkeys{Gin}{width=\formalmaxwidth,height=\formalmaxheight,keepaspectratio}
 
 \usepackage{longtable}
 \usepackage{array}
