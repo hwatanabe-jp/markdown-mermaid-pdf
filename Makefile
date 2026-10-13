@@ -145,6 +145,7 @@ info:
 		echo 'npm:' && npm --version && \
 		echo 'Pandoc:' && pandoc --version | head -n 1 && \
 		echo 'XeLaTeX:' && xelatex --version | head -n 1 && \
+		echo 'Latexmk:' && latexmk -v && \
 		echo 'Chromium:' && chromium --version && \
 		echo 'Mermaid packages:' && npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null"
 
@@ -170,7 +171,7 @@ license-check:
 	@echo "3. Auditing Mermaid npm packages and key Debian packages in image:"
 	@$(RUN_BASH) "npm list --prefix /opt/mermaid-tools --depth=0 2>/dev/null || true; \
 		echo ''; \
-		dpkg -l | grep -E 'pandoc|chromium|texlive-xetex|fonts-noto-cjk' | head -n 5"
+		dpkg -l | grep -E 'pandoc|latexmk|chromium|texlive-xetex|fonts-noto-cjk' | head -n 6"
 	@echo ""
 	@echo "✓ License compliance check complete"
 	@echo ""
