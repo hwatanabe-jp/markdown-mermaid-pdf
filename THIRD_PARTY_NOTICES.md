@@ -191,10 +191,14 @@ docker run --rm --entrypoint cat markdown-mermaid-pdf:latest /usr/share/doc/font
 
 ---
 
-The repository lockfile pins the complete npm dependency tree. The September 2026 refresh
-updates Puppeteer to 25.12.0, DOMPurify to 3.4.16, brace-expansion to 1.1.21,
-and ws to 8.22.0, along with compatible transitive dependencies. No new runtime
-package is required for document-set generation; it uses Node.js built-in modules.
+The repository lockfile pins the complete npm dependency tree. The October 2026 refresh
+updates [Puppeteer to 25.13.0](https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v25.13.0),
+[DOMPurify to 3.4.17](https://github.com/cure53/DOMPurify/releases/tag/3.4.17),
+and transitive dependencies, including http-cache-semantics 4.3.0. The licenses of
+the updated packages are unchanged. Mermaid remains on 10.9.8 with its declared
+KaTeX 0.16.x dependency range; upgrades outside those ranges require separate
+rendering compatibility verification. No new runtime package is required for
+document-set generation; it uses Node.js built-in modules.
 
 ## Updating This Notice
 
@@ -213,6 +217,6 @@ If you have questions about licensing or notice an inaccuracy, please open an is
 
 ---
 
-**Last Updated**: 2026-09-27
+**Last Updated**: 2026-10-14
 
 **Note**: This notice is informational and does not constitute legal advice.
