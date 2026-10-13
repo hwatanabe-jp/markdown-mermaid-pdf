@@ -116,7 +116,7 @@ PR の必須チェック名は維持し、変更判定や Dockerfile lint が失
 | `make help`                 | ヘルプメッセージを表示                |
 
 `make test-unit` は参照解決・設定選択・Makefile の回帰テストを実行します。
-Pandoc がインストールされていれば formal の検証・番号整合性も検査し、なければその検査だけを
+Pandoc がインストールされていれば formal の検証・図表整形・番号整合性も検査し、なければその検査だけを
 スキップします。`PANDOC_BIN` で Pandoc の実行ファイルを指定できます。PDF 生成は `make test` で検証します。
 
 空白を含むパスは、例えば `make convert INPUT='資料/設計 書.md' OUTPUT='設計 書.pdf'` のように指定できます。
@@ -137,6 +137,12 @@ docker run --rm \
 
 文書は formal スキーマ（必須フロントマターと見出し規則）に適合している必要があり、
 適合しない場合は違反内容を列挙したエラーとともに変換が中止されます。
+
+YAML フロントマターの `figure-caption-position`・`table-caption-position` に
+`top`／`bottom` を指定すると、図・表のキャプション位置を選べます（既定は両方 `top`）。
+`table-column-widths: auto` で表の列幅を内容に応じて調整でき、表ごとに
+`column-widths="20,30,50"` のような比率指定もできます。未指定時は従来の列幅を維持します。
+記法と優先順位は [キャプション位置と表の列幅](docs/formal-mode.md#キャプション位置と表の列幅) を参照してください。
 
 - スキーマの正典と記入例: [docs/formal-mode.md](docs/formal-mode.md)
 - サンプル文書: `workspace/formal-example.md`（`make example-formal` で変換）
