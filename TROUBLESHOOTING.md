@@ -1,16 +1,18 @@
 # トラブルシューティング
 
-このドキュメントでは、Markdown Mermaid PDF の使用時によくある問題とその解決方法を説明します。
+Markdown Mermaid PDF の使用時によくある問題と対処方法をまとめています。
+以下のコマンド例は、リポジトリのルートで、ローカルの `markdown-mermaid-pdf:latest` を使って実行します。
+公開イメージを使う場合は、イメージ名を `ghcr.io/hwatanabe-jp/markdown-mermaid-pdf:latest` に置き換えてください。
 
 ## 日本語フォントが表示されない
 
-コンテナ内でフォントを確認：
+コンテナ内に日本語フォントがあるか確認します。
 
 ```bash
 docker run --rm --entrypoint fc-list markdown-mermaid-pdf:latest | grep -i "noto sans cjk jp"
 ```
 
-フォントが見つからない場合は、イメージを再ビルドしてください：
+フォントが見つからない場合は、イメージを再ビルドしてください。
 
 ```bash
 make rebuild
@@ -18,12 +20,12 @@ make rebuild
 
 ## Mermaid 図表が生成されない
 
-Puppeteer のログを確認：
+Puppeteer のログを確認します。
 
 ```bash
 docker run --rm \
   -e PUPPETEER_DISABLE_HEADLESS_WARNING=false \
-  -v $(pwd)/workspace:/workspace \
+  -v "$(pwd)/workspace:/workspace" \
   markdown-mermaid-pdf:latest \
   document.md output.pdf
 ```
@@ -32,19 +34,20 @@ docker run --rm \
 
 1. **Chromium の起動に失敗している**
    - このイメージは既定で Puppeteer/Chromium に `--no-sandbox --disable-setuid-sandbox` を渡します
-   - ワークスペース内の `.puppeteer.json` や `.mermaid-config.json` を自前で置いている場合は、その設定で上書きしていないか確認
-   - Docker が十分なメモリを確保しているか確認（推奨: 2GB以上）
+   - ワークスペースに独自の `.puppeteer.json` や `.mermaid-config.json` を置いている場合は、既定の設定を上書きしていないか確認してください
+   - Docker に十分なメモリを割り当てているか確認してください（推奨: 2GB以上）
 
 2. **Mermaid 構文エラー**
-   - Markdown ファイル内の Mermaid コードブロックの構文を確認
-   - [Mermaid Live Editor](https://mermaid.live/) で構文を検証
+   - Markdown ファイル内の Mermaid コードブロックの構文を確認してください
+   - [Mermaid Live Editor](https://mermaid.live/) で構文を検証できます
 
 3. **ネットワークタイムアウト**
-   - Puppeteer がタイムアウトしている場合、`.puppeteer.json` の設定を調整
+   - Puppeteer がタイムアウトしている場合は、`.puppeteer.json` の設定を調整してください
 
-4. **信頼できない入力を処理している**
-   - このコンテナは Chromium を `--no-sandbox` 付きで起動します
-   - 外部から受け取った未検証の Markdown / Mermaid をそのまま処理しないでください
+### 入力に関する注意
+
+このコンテナは Chromium を `--no-sandbox` 付きで起動するため、信頼できる入力だけを処理してください。
+外部から受け取った未検証の Markdown / Mermaid をそのまま処理しないでください。
 
 ### スタイルを切り替えても Mermaid のテーマが変わらない
 
@@ -56,11 +59,11 @@ docker run --rm \
 
 ## PDF が生成されない
 
-詳細ログを有効化：
+変換ログを画面に表示し、`conversion.log` にも保存します。
 
 ```bash
 docker run --rm \
-  -v $(pwd)/workspace:/workspace \
+  -v "$(pwd)/workspace:/workspace" \
   markdown-mermaid-pdf:latest \
   document.md output.pdf 2>&1 | tee conversion.log
 ```
@@ -68,21 +71,21 @@ docker run --rm \
 ### よくある原因
 
 1. **LaTeX コンパイルエラー**
-   - ログファイル内で `! LaTeX Error` を検索
-   - 特殊文字やエスケープが必要な文字を確認
+   - ログファイル内で `! LaTeX Error` を検索してください
+   - 特殊文字やエスケープが必要な文字を確認してください
 
 2. **ファイルパスの問題**
-   - 入力ファイルが `/workspace` ディレクトリ内にあるか確認
-   - ファイル名にスペースや特殊文字が含まれていないか確認
+   - 入力ファイルがコンテナの `/workspace` ディレクトリ内にあるか確認してください
+   - 空白や特殊文字を含むファイル名は、`'設計 書.md'` のように引用符で囲んでください
 
 3. **メモリ不足**
-   - Docker のメモリ制限を確認・増加
-   - 大きな画像や複雑な図表がある場合は特に注意
+   - Docker のメモリ制限を確認し、必要に応じて増やしてください
+   - 大きな画像や複雑な図表がある場合は、特にメモリ使用量に注意してください
 
 ## formal スタイルで変換が中止される
 
-`--style formal` は、スキーマ検証に通らない文書の変換を意図的に中止します（非 0 終了）。
-エラーメッセージに違反内容がまとめて列挙されます：
+`--style formal` は、スキーマに適合しない文書の変換を中止し、0 以外の終了コードを返します。
+エラーメッセージには違反内容がまとめて表示されます。
 
 ```
 [formal] スキーマ検証エラー:
@@ -100,20 +103,20 @@ docker run --rm \
    - `#`(章) → `##`(節) → `###`(項) → `####`(細目) を飛ばさずに使います
    - 最初の見出し（章）より前に本文を書くことはできません
 
-スキーマの正典は [docs/formal-mode.md](docs/formal-mode.md) を参照してください。
+スキーマの定義は [formal モードの仕様](docs/formal-mode.md) を参照してください。
 
 ### formal スタイルで表の列幅を調整したい
 
-YAML フロントマターに `table-column-widths: auto` を追加すると、内容に応じて列幅を
-配分します。特定の表を調整する場合は `.table-layout` の Div で表を1つだけ囲み、
+YAML フロントマターに `table-column-widths: auto` を追加すると、内容に応じて列幅が
+調整されます。特定の表を調整する場合は `.table-layout` の Div で表を1つだけ囲み、
 `column-widths="20,30,50"` のように列数と同じ個数の比率を指定してください。
 
 自動調整は文字の幅の推定に基づくため、長いURLや改行できない文字列、画像を含むセルでは
 はみ出す場合があります。その列の比率を大きくするか、文言を短くする・表を分割するなどで
 調整してください。列数が非常に多い表や、狭い比率を指定した表も同様です。
 
-未指定または `default` の場合は既存の動作です。Pandoc がパイプ表の区切り行から読み取った
-幅を使用します（長い行がある表ではハイフンの比率が幅に反映されます）。
+未指定または `default` の場合は、Pandoc がパイプ表の区切り行から読み取った幅を使用します。
+長い行がある表では、ハイフンの比率が幅に反映されます。
 列幅を明確に指定したい場合は上記の比率指定を使用してください。
 詳細は [キャプション位置と表の列幅](docs/formal-mode.md#キャプション位置と表の列幅) を参照してください。
 
@@ -121,41 +124,41 @@ YAML フロントマターに `table-column-widths: auto` を追加すると、�
 
 YAML フロントマターの `figure-caption-position` と `table-caption-position` に
 `top`／`bottom` を指定します。Markdown 内でキャプションを記述する場所は変更しません。
-表の下配置は、複数ページにまたがる場合も表全体の末尾に一度だけ表示します。
+`bottom` を指定すると、表が複数ページにまたがる場合も、キャプションは表全体の末尾に一度だけ表示されます。
 
 ### 見本の公開文書と細部が異なる
 
 formal スタイルは公開文書の構成・書式・トーンの再現を目的としており、Word 原本との
-ピクセル単位の一致は目標にしていません（docs/formal-mode.md の「再現の方針と制限事項」参照）。
+ピクセル単位の一致は目標にしていません。詳細は [再現の方針と制限事項](docs/formal-mode.md#再現の方針と制限事項) を参照してください。
 
 ## コンテナが起動しない
 
-Docker のバージョンを確認：
+Docker と Docker Compose のバージョンを確認します。
 
 ```bash
 docker --version
 docker compose version
 ```
 
-必要なバージョン：
+必要なバージョンは次のとおりです。
 
 - Docker 20.10 以上
-- Docker Compose v2 以上
+- Docker Compose v2 以上（Compose を使う場合）
 
-## パフォーマンスが遅い
+## 変換に時間がかかる
 
 ### 変換速度の改善
 
 1. **Docker のリソース割り当てを増やす**
-   - Docker Desktop の設定で CPU とメモリを増やす
+   - Docker Desktop の設定で CPU とメモリを増やしてください
 
 2. **ボリュームマウントの最適化**
-   - 必要最小限のファイルのみ `workspace/` に配置
-   - 大きな不要ファイルを削除
+   - `workspace/` に置くファイルを必要最小限にしてください
+   - 大きな不要ファイルを削除してください
 
 3. **Mermaid 図表の数を確認**
-   - 各図表は Chromium を起動するため時間がかかる
-   - 必要に応じて図表を外部画像として保存し埋め込む
+   - 図表ごとに Chromium を起動するため時間がかかります
+   - 必要に応じて図表を外部画像として保存し、埋め込んでください
 
 ## CI の lint (Hadolint / Dockle) が失敗する
 
@@ -163,16 +166,16 @@ docker compose version
 Dockle (CIS ベースのチェック) は amd64 の検証・公開ジョブで、smoke test と同じ候補イメージを検査します。
 いずれかが失敗すると、公開タグ `:main` の更新を止めます。
 
-- ローカルでの再現は `make lint`(Dockerfile のみなら `make lint-dockerfile`、
-  イメージのみなら `make lint-image`)。CI と同じピン済みツールで同じ引数を実行します。
+- ローカルでは `make lint` で再現できます。Dockerfile のみなら `make lint-dockerfile`、
+  イメージのみなら `make lint-image` を使います。ツールのバージョンと引数は CI と同じです。
 - `make lint-image` はローカルにある対象イメージを `docker image save` で一時アーカイブにし、
   Dockle の `--input` で検査します。対象がまだなければ先に `docker pull <image-ref>` が必要です。
-  digest 指定の公開候補で `Manifest does not match provided manifest digest` となる
-  Dockle の読み取り経路を避け、smoke test と同じ候補を検査します。
-  一時アーカイブ分の空き容量が必要です。成功・失敗どちらの場合も終了時に削除します。
-- ツールのバージョン(digest ピン)と許容リストは `Makefile` に、
+  この方法で、digest 指定の公開候補を読み取る際の `Manifest does not match provided manifest digest`
+  エラーを避け、smoke test と同じ候補を検査します。
+  一時アーカイブ分の空き容量が必要です。一時アーカイブは成功・失敗にかかわらず終了時に削除します。
+- ツールのバージョンを固定する digest と許容リストは `Makefile` に、
   Hadolint のルール除外は `.hadolint.yaml` に理由コメント付きでまとめています。
-- 意図的に許容しているチェック:
+- 意図的に許容しているチェックは次のとおりです。
   - `DL3008`: apt パッケージは非ピン方針(CVE は週次 Trivy が担当)
   - `CIS-DI-0001`: root 実行は bind-mount 出力の所有権を考慮した仕様
   - `DKL-DI-0006`: `latest` タグは「安定版のみ」のタグポリシー
@@ -190,7 +193,8 @@ Mermaid 描画（Chromium）は CPU とメモリを使うため、build や smok
 
 ## 権限エラー
 
-コンテナがルートユーザーとして実行されるため、生成されたファイルの所有権が変更される場合があります：
+コンテナは既定で root として動作するため、生成されたファイルの所有者がホスト側のユーザーと異なる場合があります。
+生成済みファイルの所有権を変更するか、実行時にホスト側のユーザーを指定してください。
 
 ```bash
 # 所有権を変更
@@ -198,12 +202,12 @@ sudo chown -R $USER:$USER workspace/
 
 # または、コンテナ実行時にユーザーを指定
 docker run --rm --user $(id -u):$(id -g) \
-  -v $(pwd)/workspace:/workspace \
+  -v "$(pwd)/workspace:/workspace" \
   markdown-mermaid-pdf:latest \
   document.md output.pdf
 ```
 
-Docker Compose を使う場合も同様に `--user` を付けられます：
+Docker Compose を使う場合も `--user` を指定できます。
 
 ```bash
 docker compose run --rm \
@@ -212,26 +216,15 @@ docker compose run --rm \
   document.md output.pdf
 ```
 
-## さらなるサポート
-
-上記で解決しない場合：
-
-1. [GitHub Issues](https://github.com/hwatanabe-jp/markdown-mermaid-pdf/issues) で既存の問題を検索
-2. 新しい Issue を作成（以下の情報を含める）：
-   - エラーメッセージ全文
-   - 使用している OS とアーキテクチャ
-   - Docker バージョン
-   - 再現手順
-
 ## 文書一式の生成で失敗する・リンクで移動できない
 
 `--set documents.json [出力ディレクトリ]` は、全件の検証と変換に成功した場合だけ
-出力ディレクトリを確定します。`[document-set]` の後に表示される文書と理由を確認してください。
+出力先に PDF 一式を保存します。`[document-set]` の後に表示される文書と理由を確認してください。
 
 - `output directory already exists`: 成果物の上書きを防ぐため停止しています。
   別の出力先を指定するか、以前の成果物を移動してから再実行してください。
 - `duplicate` / `ambiguous heading`: 文書 ID・番号・入力・出力名、明示的な見出し ID の
-  重複を確認してください。出力名は大文字小文字と Unicode 正規化も考慮します。
+  重複を確認してください。出力名は大文字小文字の違いと Unicode 正規化も考慮して重複を検査します。
 - `unknown document` / `unknown heading`: `doc:ID#見出しID` の ID と設定・Markdown を照合してください。
 - 画像が見つからない: 画像パスは元の Markdown のディレクトリを基準に指定してください。
   Mermaid の設定は従来どおりコマンドの実行ディレクトリにあるものを使用します。
@@ -243,3 +236,13 @@ docker compose run --rm \
 通常の変換失敗では一時ディレクトリを削除します。プロセスの強制終了や電源断では、
 出力先の親に `.document-set-*` が残ることがあります。稼働中の変換がないことを確認してから
 残った一時ディレクトリを削除できます。詳細は [formal モード](docs/formal-mode.md#文書一式の生成) を参照してください。
+
+## 解決しない場合
+
+[GitHub Issues](https://github.com/hwatanabe-jp/markdown-mermaid-pdf/issues) で同じ問題が報告されていないか検索してください。
+新しい Issue を作成する場合は、次の情報を含めてください。
+
+- エラーメッセージ全文
+- 使用している OS とアーキテクチャ
+- Docker バージョン
+- 再現手順
