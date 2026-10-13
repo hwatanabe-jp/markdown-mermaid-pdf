@@ -4,6 +4,7 @@
 -- mermaid-filter などの重い処理より前に適用し、不適合文書を早期に弾く。
 
 local stringify = pandoc.utils.stringify
+local layout = dofile(pandoc.path.directory(PANDOC_SCRIPT_FILE) .. "/layout.lua")
 
 local REQUIRED_META = { "doc-number", "title", "date", "organization", "revision-history" }
 
@@ -210,14 +211,14 @@ local function validate_headings(blocks)
 end
 
 function Pandoc(doc)
-  local meta = validate_and_decorate_meta(doc.meta)
+  doc.meta = validate_and_decorate_meta(doc.meta)
   validate_headings(doc.blocks)
+  doc = layout.prepare(doc, add_error)
 
   if #errors > 0 then
     error("\n[formal] スキーマ検証エラー:\n- " .. table.concat(errors, "\n- ")
       .. "\n詳細は docs/formal-mode.md を参照してください。\n", 0)
   end
 
-  doc.meta = meta
   return doc
 end

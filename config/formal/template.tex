@@ -52,7 +52,7 @@
 \usepackage{etoolbox}
 \AtBeginEnvironment{longtable}{\hyphenpenalty=10000\exhyphenpenalty=10000}
 
-% 図表番号は章ごとの連番(図 2-1、表 1-1)。キャプションは上部に置く。
+% 図表番号は章ごとの連番(図 2-1、表 1-1)。位置の既定値は上部。
 \usepackage{caption}
 \counterwithin{figure}{section}
 \counterwithin{table}{section}
@@ -61,8 +61,8 @@
 \renewcommand{\figurename}{図}
 \renewcommand{\tablename}{表}
 \captionsetup{font=small,labelsep=quad,justification=centering}
-\captionsetup[figure]{position=top,aboveskip=2mm,belowskip=1mm}
-\captionsetup[table]{position=top,aboveskip=1mm,belowskip=2mm}
+\captionsetup[figure]{position=$if(figure-caption-position)$$figure-caption-position$$else$top$endif$,aboveskip=2mm,belowskip=1mm}
+\captionsetup[table]{position=$if(table-caption-position)$$table-caption-position$$else$top$endif$,aboveskip=1mm,belowskip=2mm}
 
 % ===== コードブロック: 枠付き =====
 \usepackage{fancyvrb}
