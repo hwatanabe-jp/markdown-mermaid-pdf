@@ -43,6 +43,10 @@ make convert INPUT=document.md OUTPUT=output.pdf
 出力名を省略すると、入力ファイルの拡張子を `.pdf` に変えて保存します。
 コマンドの一覧は `make help` または [Makefile コマンド一覧](#makefile-コマンド一覧) で確認できます。
 
+PDF 生成では latexmk が XeLaTeX を必要な回数だけ再実行し、目次と相互参照を確定します。
+再実行の上限に達しても安定しない場合や、未定義・重複した参照が残る場合は変換を失敗として扱います。
+通常・formal スタイル、文書一式の生成に共通の動作です。
+
 ### Docker を直接使用
 
 次の例では、`workspace/document.md` を読み込み、`workspace/output.pdf` に出力します。

@@ -42,6 +42,14 @@ This Docker image incorporates the following bundled third-party software and re
 - **Source**: https://pandoc.org/
 - **License Text**: https://github.com/jgm/pandoc/blob/main/COPYRIGHT
 
+### Latexmk
+
+- **License**: GPL v2 or later
+- **Copyright**: John Collins and contributors
+- **Source**: https://ctan.org/pkg/latexmk
+- **License Details**: `/usr/share/doc/latexmk/copyright` within the container
+- Runs XeLaTeX until table-of-contents and cross-reference data stabilize.
+
 ### Poppler Utils (`pdfinfo`)
 
 - **License**: Various Open Source licenses
@@ -142,6 +150,7 @@ This Docker image combines software under various licenses:
 | Node.js        | MIT              | ✅             | ✅           | ✅           | ✅              |
 | npm            | Artistic-2.0     | ✅             | ✅           | ✅           | ✅              |
 | Pandoc         | GPL v2+          | ✅             | ✅           | ✅           | ✅              |
+| Latexmk        | GPL v2+          | ✅             | ✅           | ✅           | ✅              |
 | Poppler Utils  | Various OSS      | ✅             | ✅           | ✅           | ✅              |
 | TeX Live       | LPPL             | ✅             | ✅           | ✅           | ✅              |
 | Noto Fonts     | SIL OFL 1.1      | ✅             | ✅           | ✅           | ✅              |

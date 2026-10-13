@@ -82,7 +82,22 @@ test('failed conversion leaves no generated configuration or PDF', (t) => {
   const context = sandbox(t);
   const result = convert(context, 'formal', { PANDOC_FAIL: '1' });
   assert.notEqual(result.status, 0);
+  assert(!result.stdout.includes('Successfully generated:'));
   for (const filename of [...configFiles, '出力 文書.pdf']) {
     assert(!fs.existsSync(path.join(context.dir, filename)));
+  }
+});
+
+test('both styles use XeLaTeX through latexmk with strict reference checking', (t) => {
+  const context = sandbox(t);
+  for (const style of ['default', 'formal']) {
+    const result = convert(context, style);
+    assert.equal(result.status, 0, result.stderr);
+  }
+  for (const { args } of calls(context)) {
+    assert(args.includes('--pdf-engine=latexmk'));
+    assert.deepEqual(args.filter((arg) => arg.startsWith('--pdf-engine-opt=')), [
+      '--pdf-engine-opt=-norc', '--pdf-engine-opt=-xelatex', '--pdf-engine-opt=-Werror',
+    ]);
   }
 });

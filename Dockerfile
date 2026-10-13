@@ -42,6 +42,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         nodejs \
         pandoc \
+        latexmk \
         poppler-utils \
         texlive-xetex \
         texlive-lang-cjk \
@@ -88,6 +89,7 @@ RUN echo "=== Version Information ===" \
     && chromium --version \
     && pandoc --version | head -n 1 \
     && xelatex --version | head -n 1 \
+    && latexmk -v \
     && npm list --prefix ${MERMAID_TOOLS_DIR} --depth=0 2>/dev/null \
     && echo "mermaid-filter: $(which mermaid-filter)" \
     && fc-list | grep -i "noto sans cjk jp" | head -n 1 \

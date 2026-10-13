@@ -133,9 +133,14 @@ else
   )
 fi
 
+# Keep auxiliary files across XeLaTeX passes until TOC/cross-references settle.
+# Fail on unresolved references; do not let workspace latexmkrc override this policy.
 pandoc "${INPUT_FILE}" \
   -o "${OUTPUT_PDF}" \
-  --pdf-engine=xelatex \
+  --pdf-engine=latexmk \
+  --pdf-engine-opt=-norc \
+  --pdf-engine-opt=-xelatex \
+  --pdf-engine-opt=-Werror \
   --resource-path="${RESOURCE_PATH:-$(dirname -- "${INPUT_FILE}"):.}" \
   "${style_args[@]}" \
   --verbose

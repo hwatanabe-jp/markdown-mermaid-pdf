@@ -124,6 +124,7 @@ docker run "${docker_run_args[@]}" -v "${REPO_DIR}:/repo:ro" \
   --entrypoint node "${IMAGE_REF}" --test \
   /repo/tests/document-set.test.mjs \
   /repo/tests/generate-pdf.test.mjs \
+  /repo/tests/pdf-references.integration.test.mjs \
   /repo/tests/formal.test.mjs \
   /repo/tests/formal-layout.integration.test.mjs \
   /repo/tests/formal-images.integration.test.mjs \
