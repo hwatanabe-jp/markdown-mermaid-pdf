@@ -185,17 +185,18 @@ test('non-converging references fail at the rerun limit', (t) => {
 
 ~~~{=latex}
 \makeatletter
-\@ifundefined{r@flip}{\def\previous{0}}{\edef\previous{\getrefnumber{flip}}}
-% Change auxiliary content on every pass without returning to a previous value.
-\edef\next{\number\numexpr\previous+1\relax}
-\immediate\write\@auxout{\string\newlabel{flip}{{\next}{1}}}
+\@ifundefined{r@growing}{\def\previous{}}{\edef\previous{\getrefnumber{growing}}}
+% Grow the aux file on every pass: latexmk 4.79 caches checksums by size and
+% second-resolution mtime, so same-length changes can be missed on fast runs.
+\edef\next{\previous x}
+\immediate\write\@auxout{\string\newlabel{growing}{{\next}{1}}}
 \makeatother
 ~~~
 
-Increasing label: \ref{flip}.
+Growing label: \ref{growing}.
 `));
   const result = convert(dir, 'default');
-  assert.notEqual(result.status, 0);
+  assert.notEqual(result.status, 0, result.error?.message || result.stderr.slice(-6000));
   assert.match(result.stderr, /Maximum runs of .* reached/);
   assert(!result.stdout.includes('Successfully generated:'));
   assert(!fs.existsSync(path.join(dir, '出力 文書.pdf')));
