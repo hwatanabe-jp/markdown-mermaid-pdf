@@ -62,6 +62,80 @@ test('two-page formal TOC and page references agree with every body heading', (t
   assert.match(pages[bodyStart], new RegExp(`FinalPageReference:\\s*${finalPage}\\.`));
 });
 
+test('formal named destinations stay on the page of every heading across page breaks', (t) => {
+  const dir = sandbox(t);
+  const headings = [{ title: 'テスト章', id: 'test-chapter', destination: 'section.1' }];
+  const body = ['# テスト章 {#test-chapter}'];
+  for (let number = 1; number <= 55; number++) {
+    const suffix = String(number).padStart(2, '0');
+    headings.push({ title: `テスト項目${suffix}`, id: `test-${suffix}`, destination: `subsection.1.${number}` });
+    body.push(`## テスト項目${suffix} {#test-${suffix}}`,
+      'これは目次と本文のページ番号を確認するための合成本文です。');
+  }
+  fs.writeFileSync(path.join(dir, '入力 文書.md'), document(body.join('\n\n')));
+  const result = convert(dir, 'formal');
+  assert.equal(result.status, 0, result.error?.message || result.stderr.slice(-6000));
+  const extracted = spawnSync('pdftotext', ['-layout', '出力 文書.pdf', '-'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const pages = extracted.stdout.split('\f');
+  const destinations = spawnSync('pdfinfo', ['-dests', '出力 文書.pdf'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(destinations.status, 0, destinations.stderr);
+  const targets = new Map([...destinations.stdout.matchAll(/^\s*(\d+)\s+\[[^\]]+\]\s+"([^"]+)"/gm)]
+    .map((match) => [match[2], Number(match[1])]));
+  const bodyStart = pages.findIndex((page) => page.includes('これは目次と本文'));
+  assert(bodyStart >= 4, 'fixture must have multiple TOC pages');
+  assert(pages.length - bodyStart > 5, 'fixture must exercise natural page breaks');
+  for (const heading of headings) {
+    const page = pages.findIndex((text, index) => index >= bodyStart
+      && text.replaceAll(/\s/g, '').includes(heading.title)) + 1;
+    assert(page > 0, `missing heading ${heading.title}`);
+    for (const target of [heading.id, heading.destination]) {
+      assert.equal(targets.get(target), page, `wrong destination page for ${target}`);
+    }
+  }
+});
+
+test('formal document-set anchors follow nested, formatted and unnumbered headings at all four levels', (t) => {
+  const dir = sandbox(t);
+  const headings = [{ title: 'ChapterMarker', id: 'chapter', destination: 'section.1' },
+    { title: 'SectionMarker', id: 'section', destination: 'subsection.1.1' }];
+  const body = ['# ChapterMarker {#chapter}', 'Chapter body.', '## SectionMarker {#section}', 'Section body.'];
+  for (let i = 1; i <= 25; i++) {
+    headings.push({ title: `ItemMarker${i}End`, id: `item-${i}`, destination: `subsubsection.1.1.${i}` },
+      { title: `DetailMarker${i}End`, id: `detail-${i}`, destination: `paragraph.1.1.${i}.1` });
+    body.push(`### **ItemMarker${i}End** {#item-${i}}`, 'Item body.',
+      `#### DetailMarker${i}End {#detail-${i}}`, 'Detail body.');
+  }
+  for (let level = 1; level <= 4; level++) {
+    const title = `UnnumberedMarker${level}End`;
+    const id = `unnumbered-${level}`;
+    headings.push({ title, id, destination: `section*.${level}` });
+    body.push('<!-- pagebreak -->', `${'#'.repeat(level)} ${title} {#${id} .unnumbered}`, 'Unnumbered body.');
+  }
+  fs.writeFileSync(path.join(dir, '入力 文書.md'), document(`::: {.wrapper}\n${body.join('\n\n')}\n:::`));
+  fs.writeFileSync(path.join(dir, 'documents.json'), JSON.stringify({ documents: [
+    { id: 'headings', input: '入力 文書.md', output: 'headings.pdf' },
+  ] }));
+  const result = convert(dir, 'formal', ['--set', 'documents.json', 'dist']);
+  assert.equal(result.status, 0, result.error?.message || result.stderr.slice(-6000));
+  const extracted = spawnSync('pdftotext', ['-layout', 'dist/headings.pdf', '-'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const pages = extracted.stdout.split('\f');
+  const destinations = spawnSync('pdfinfo', ['-dests', 'dist/headings.pdf'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(destinations.status, 0, destinations.stderr);
+  const targets = new Map([...destinations.stdout.matchAll(/^\s*(\d+)\s+\[[^\]]+\]\s+"([^"]+)"/gm)]
+    .map((match) => [match[2], Number(match[1])]));
+  const bodyStart = pages.findIndex((page) => page.includes('Chapter body.'));
+  assert(bodyStart >= 3);
+  for (const [index, heading] of headings.entries()) {
+    const page = pages.findIndex((text, i) => i >= bodyStart && text.includes(heading.title)) + 1;
+    assert(page > 0, `missing heading ${heading.title}`);
+    for (const target of [heading.id, `docset-h${index + 1}`, heading.destination]) {
+      assert.equal(targets.get(target), page, `wrong destination page for ${target}`);
+    }
+  }
+});
+
 for (const style of ['default', 'formal']) {
   test(`${style}: forward references resolve and undefined references fail without replacing output`, (t) => {
     const dir = sandbox(t);
@@ -112,12 +186,13 @@ test('non-converging references fail at the rerun limit', (t) => {
 ~~~{=latex}
 \makeatletter
 \@ifundefined{r@flip}{\def\previous{0}}{\edef\previous{\getrefnumber{flip}}}
-\ifnum\previous=0 \def\next{1}\else \def\next{0}\fi
+% Change auxiliary content on every pass without returning to a previous value.
+\edef\next{\number\numexpr\previous+1\relax}
 \immediate\write\@auxout{\string\newlabel{flip}{{\next}{1}}}
 \makeatother
 ~~~
 
-Oscillating label: \ref{flip}.
+Increasing label: \ref{flip}.
 `));
   const result = convert(dir, 'default');
   assert.notEqual(result.status, 0);

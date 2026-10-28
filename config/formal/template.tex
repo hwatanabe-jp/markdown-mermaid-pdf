@@ -99,35 +99,35 @@
 \titleformat{\section}[block]
   {\sffamily\bfseries\fontsize{14pt}{20pt}\selectfont}
   {}{0pt}
-  {\formalchapterbox{\thesection\hspace{1em}#1}}
+  {\formalchapterbox{\formalheadinganchors\thesection\hspace{1em}#1}}
 \titleformat{name=\section,numberless}[block]
   {\sffamily\bfseries\fontsize{12pt}{18pt}\selectfont\filcenter}
   {}{0pt}
-  {#1}
+  {\formalheadinganchors#1}
 \titleformat{\subsection}[block]
   {\sffamily\bfseries\fontsize{13pt}{19pt}\selectfont\color{formalheading}}
   {}{0pt}
-  {\thesubsection\hspace{1em}#1}
+  {\formalheadinganchors\thesubsection\hspace{1em}#1}
 \titleformat{name=\subsection,numberless}[block]
   {\sffamily\bfseries\fontsize{13pt}{19pt}\selectfont\color{formalheading}}
   {}{0pt}
-  {#1}
+  {\formalheadinganchors#1}
 \titleformat{\subsubsection}[block]
   {\sffamily\bfseries\fontsize{12pt}{17pt}\selectfont\color{formalheading}}
   {}{0pt}
-  {\thesubsubsection\hspace{0.5em}#1}
+  {\formalheadinganchors\thesubsubsection\hspace{0.5em}#1}
 \titleformat{name=\subsubsection,numberless}[block]
   {\sffamily\bfseries\fontsize{12pt}{17pt}\selectfont\color{formalheading}}
   {}{0pt}
-  {#1}
+  {\formalheadinganchors#1}
 \titleformat{\paragraph}[block]
   {\sffamily\bfseries\normalsize}
   {}{0pt}
-  {\hspace{1em}\theparagraph\hspace{1em}#1}
+  {\formalheadinganchors\hspace{1em}\theparagraph\hspace{1em}#1}
 \titleformat{name=\paragraph,numberless}[block]
   {\sffamily\bfseries\normalsize}
   {}{0pt}
-  {\hspace{1em}#1}
+  {\formalheadinganchors\hspace{1em}#1}
 \titlespacing*{\section}{0pt}{0pt}{1.0\baselineskip}
 \titlespacing*{\subsection}{0pt}{1.6\baselineskip}{0.7\baselineskip}
 \titlespacing*{\subsubsection}{0pt}{1.4\baselineskip}{0.6\baselineskip}
@@ -163,6 +163,26 @@ $endif$
 % アンカー名には ")" やカタカナを含めない
 \renewcommand{\theHsubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
 \renewcommand{\theHparagraph}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}.\arabic{paragraph}}
+
+% Keep both Pandoc IDs and hyperref's generated targets in the heading line.
+% titlesec normally emits its saved target before the heading's page-break
+% decision. Fail explicitly if an upstream change invalidates this patch.
+\makeatletter
+\patchcmd{\ttl@select}{\ttl@Hy@saveanchor}{}{}%
+  {\PackageError{formal}{Cannot defer titlesec heading anchors}{Check titlesec/hyperref compatibility.}}
+\let\formalheadingid\@empty
+\let\formaloriginalhypertarget\hypertarget
+\newcommand{\formalheadingtarget}[2]{%
+  \let\hypertarget\formaloriginalhypertarget
+  \def\formalheadingid{#1}#2\let\formalheadingid\@empty}
+\newcommand{\formalheadinganchors}{%
+  \leavevmode
+  % Starred headings have no saved titlesec target; give each its own TOC target.
+  \ifx\ttl@Hy@saveanchor\@empty\phantomsection\else\ttl@Hy@saveanchor\fi
+  \ifx\formalheadingid\@empty\else
+    \Hy@raisedlink{\formaloriginalhypertarget{\formalheadingid}{}}%
+  \fi}
+\makeatother
 
 \begin{document}
 

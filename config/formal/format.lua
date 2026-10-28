@@ -254,7 +254,12 @@ function Header(el)
   if el.level == 1 and el.classes:includes("unnumbered") then
     table.insert(blocks, pandoc.RawBlock("latex", "\\clearpage"))
   end
+  -- Pandoc places its hypertarget outside the section command, before titlesec
+  -- can break the page. Redirect only this heading's target, preserving the
+  -- Header AST so the writer still handles IDs, links and inline formatting.
+  table.insert(blocks, pandoc.RawBlock("latex", "\\let\\hypertarget\\formalheadingtarget"))
   table.insert(blocks, el)
+  table.insert(blocks, pandoc.RawBlock("latex", "\\let\\hypertarget\\formaloriginalhypertarget"))
   local anchor = el.attributes["document-set-anchor"]
   if anchor then
     if not anchor:match("^docset%-h%d+$") then
