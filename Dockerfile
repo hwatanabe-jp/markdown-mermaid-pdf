@@ -19,7 +19,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV MERMAID_TOOLS_DIR=/opt/mermaid-tools
 ENV PATH=${MERMAID_TOOLS_DIR}/node_modules/.bin:${PATH}
 
-ARG NODE_MAJOR=24
+ARG NODE_MAJOR=26
 
 # Fail RUN pipelines on any stage failure (e.g. a truncated curl feeding gpg).
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

@@ -20,7 +20,7 @@ help:
 	@echo "  make example-formal - Generate formal-style PDF from formal-example.md"
 	@echo "  make example-set    - Generate a formal document set in formal-set/dist"
 	@echo "  make test           - Test PDF generation"
-	@echo "  make test-unit      - Run local tests without Docker (formal tests need Pandoc)"
+	@echo "  make test-unit      - Run local tests with Node.js 26.x, without Docker (formal tests need Pandoc)"
 	@echo "  make shell          - Open bash shell in container"
 	@echo "  make clean          - Remove generated PDFs and Docker artifacts"
 	@echo "  make rebuild        - Clean build (no cache)"
