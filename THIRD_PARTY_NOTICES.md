@@ -200,15 +200,16 @@ docker run --rm --entrypoint cat markdown-mermaid-pdf:latest /usr/share/doc/font
 
 ---
 
-The repository lockfile pins the complete npm dependency tree. The October 2026 refresh
-updates [Puppeteer to 25.16.0](https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v25.16.0),
-[DOMPurify to 3.4.17](https://github.com/cure53/DOMPurify/releases/tag/3.4.17),
-and transitive dependencies, including Cytoscape 3.34.4, modern-tar 0.8.6,
-and @puppeteer/browsers 3.2.6. The licenses of
-the updated packages are unchanged. Mermaid remains on 10.9.8 with its declared
+The repository lockfile pins the complete npm dependency tree. The November 2026 refresh
+updates [Puppeteer to 25.17.0](https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v25.17.0),
+brace-expansion to 1.1.22, ws to 8.22.2, and transitive dependencies, including
+Cytoscape 3.35.0, D3 7.9.2, and @puppeteer/browsers 3.2.7. The package set and
+license metadata are unchanged. Mermaid remains on 10.9.8 with its declared
 KaTeX 0.16.x dependency range; upgrades outside those ranges require separate
-rendering compatibility verification. No new runtime package is required for
-document-set generation; it uses Node.js built-in modules.
+rendering compatibility verification. The npm audit still reports the low-severity
+[KaTeX advisory GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7)
+and affected dependents; its fix is outside that KaTeX range. No new runtime
+package is required for document-set generation; it uses Node.js built-in modules.
 
 ## Updating This Notice
 
@@ -227,6 +228,6 @@ If you have questions about licensing or notice an inaccuracy, please open an is
 
 ---
 
-**Last Updated**: 2026-10-14
+**Last Updated**: 2026-11-12
 
 **Note**: This notice is informational and does not constitute legal advice.
