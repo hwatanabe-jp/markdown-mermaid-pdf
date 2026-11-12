@@ -15,6 +15,9 @@ Markdown を PDF に変換する Docker コンテナです。Pandoc と XeLaTeX 
 - Docker 20.10 以上
 - Docker Compose v2 以上（オプション）
 
+コンテナ内の Node.js は 26.x（LTS）を使用します。ローカルで `make test-unit` を実行する場合も
+Node.js 26.x を使用してください。
+
 ## クイックスタート
 
 リポジトリのルートディレクトリで実行します。サンプルの出力先は `workspace/example.pdf` です。
@@ -107,7 +110,7 @@ docker compose run --rm markdown-mermaid-pdf-shell
 | `make example-set`         | マスタ・詳細文書の一式を個別 PDF として生成 |
 | `make example-formal`       | formal-example.md から formal スタイルの PDF を生成 |
 | `make test`                 | PDF が正常に生成されるかテスト        |
-| `make test-unit`            | Docker 不要の軽量テスト（Node.js が必要） |
+| `make test-unit`            | Docker 不要の軽量テスト（Node.js 26.x が必要） |
 | `make convert INPUT=<file>` | 指定したファイルを変換                |
 | `make shell`                | コンテナ内で bash シェルを起動        |
 | `make clean`                | 生成された PDF をクリーンアップ       |

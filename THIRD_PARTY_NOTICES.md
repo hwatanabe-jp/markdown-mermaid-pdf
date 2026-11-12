@@ -17,7 +17,7 @@ This Docker image incorporates the following bundled third-party software and re
 
 ## Programming Languages & Runtimes
 
-### Node.js 24.x (LTS)
+### Node.js 26.x (LTS)
 
 - **License**: MIT License
 - **Copyright**: Node.js contributors
